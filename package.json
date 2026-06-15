@@ -1,0 +1,31 @@
+{
+  "name": "sovereign-inbox-prototype",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sovereign Inbox — privacy-first email assistant concept prototype (synthetic data only).",
+  "scripts": {
+    "setup": "prisma generate && prisma db push",
+    "demo": "prisma db push && next dev",
+    "dev": "next dev",
+    "build": "prisma generate && prisma db push && next build",
+    "start": "next start",
+    "lint": "next lint",
+    "postinstall": "prisma generate"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@prisma/client": "5.22.0",
+    "next": "14.2.15",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "20.14.10",
+    "@types/react": "18.3.3",
+    "@types/react-dom": "18.3.0",
+    "prisma": "5.22.0",
+    "typescript": "5.5.3"
+  }
+}

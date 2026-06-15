@@ -1,0 +1,79 @@
+// Sovereign Inbox — demo data model (local SQLite).
+//
+// IMPORTANT: This database stores ONLY AI-derived data (summaries, triage
+// labels, draft replies, lightweight metadata) — never raw mailbox content.
+// All derived content is encrypted at rest with a per-item key (see lib/crypto.ts
+// and lib/keyvault). "Forgetting" an item destroys its key, making the stored
+// ciphertext permanently unrecoverable ("crypto-shredding").
+//
+// TODO(production): move to a Canadian-region managed Postgres (or equivalent)
+// with encryption-at-rest, access logging, and backups governed by a data
+// residency agreement.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// A single AI-derived record for one source email.
+// The sensitive fields (sender, subject, summary, draft, etc.) live ONLY inside
+// the encrypted `ciphertext` blob — never in their own clear columns.
+model DerivedItem {
+  id          String    @id @default(cuid())
+  // Stable id of the originating (synthetic) email, used to avoid double-processing.
+  sourceId    String    @unique
+  status      String    @default("ACTIVE") // ACTIVE | FORGOTTEN
+  processedAt DateTime  @default(now())
+  // When this item is scheduled to be forgotten. Null means "only on logout".
+  forgetAt    DateTime?
+  forgottenAt DateTime?
+
+  // Encrypted derived payload (AES-256-GCM). Unreadable once the key is destroyed.
+  ciphertext  String
+  iv          String
+  authTag     String
+
+  // The per-item key lives in the KeyVault. Destroying it shreds this item.
+  keyId       String
+
+  @@index([status])
+}
+
+// Demo key vault. Each derived item gets its own key. "Destroying" a key nulls
+// the material and flips `destroyed`, which is what makes a forget irreversible.
+//
+// WARNING: storing key material in the same SQLite file as the ciphertext is
+// NOT secure and is for demonstration only.
+// TODO(production): replace with a Canadian-controlled HSM/KMS. Keys must never
+// live next to the data they protect, and destruction must be a hardware-backed,
+// auditable operation.
+model VaultKey {
+  id          String    @id @default(cuid())
+  material    String? // base64 key bytes; null after destruction
+  destroyed   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  destroyedAt DateTime?
+}
+
+// Append-only audit trail. Records THAT something happened and WHEN — never the
+// forgotten content itself.
+model AuditEvent {
+  id        String   @id @default(cuid())
+  itemId    String?
+  sourceRef String? // a non-sensitive reference label, safe to keep after forget
+  event     String // PROCESSED | FORGOTTEN | SETTINGS_CHANGED
+  message   String // human-readable, non-sensitive
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+// Single-row settings table for the forget schedule.
+model Setting {
+  id             Int    @id @default(1)
+  forgetInterval String @default("24h") // "1h" | "24h" | "7d" | "logout"
+}
