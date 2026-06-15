@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
 import { encrypt } from "@/lib/crypto";
 import { getKeyVault } from "@/lib/keyvault/LocalKeyVault";
-import { getAIProvider } from "@/lib/ai";
+import { resolveAIProvider } from "@/lib/ai";
 import { SampleDataSource } from "@/lib/email/SampleDataSource";
 import type { EmailSource } from "@/lib/email/EmailSource";
 import { recordAudit } from "@/lib/audit";
@@ -15,8 +15,8 @@ import type { DerivedPayload } from "@/lib/types";
 // The raw email body is used in-memory only and is NEVER written to the database.
 export async function processInbox(
   source: EmailSource = new SampleDataSource()
-): Promise<{ processed: number; skipped: number }> {
-  const ai = getAIProvider();
+): Promise<{ processed: number; skipped: number; aiProvider: string }> {
+  const ai = await resolveAIProvider();
   const vault = getKeyVault();
   const interval = await getForgetInterval();
 
@@ -72,15 +72,16 @@ export async function processInbox(
       },
     });
 
-    // Audit: record THAT we processed an item. No content, no key.
+    // Audit: record THAT we processed an item, and with WHICH local model.
+    // Still content-free — the provider name is non-sensitive.
     await recordAudit({
       event: "PROCESSED",
-      message: `Processed 1 email into encrypted derived data (per-item key issued).`,
+      message: `Processed 1 email into encrypted derived data (per-item key issued) via ${ai.name}.`,
       sourceRef: email.id,
     });
 
     processed++;
   }
 
-  return { processed, skipped };
+  return { processed, skipped, aiProvider: ai.name };
 }
