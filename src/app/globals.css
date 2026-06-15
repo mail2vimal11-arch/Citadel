@@ -157,3 +157,25 @@ button:disabled { opacity: 0.5; cursor: default; }
 .flash { padding: 8px 12px; border-radius: 7px; font-size: 14px; margin-bottom: 14px; }
 .flash.ok { background: #e8f6ee; color: var(--ok); border: 1px solid #bfe3cd; }
 .flash.info { background: #e9f3fb; color: var(--brand-dark); border: 1px solid #c5e0f3; }
+
+/* Semantic search box (demonstrates the local EmbeddingProvider seam). */
+.search-input {
+  flex: 1 1 260px;
+  min-width: 180px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--ink);
+  background: #fff;
+}
+.search-input:focus {
+  outline: none;
+  border-color: var(--brand);
+}
+.search-hit {
+  padding: 6px 0;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+}
+.search-hit:first-of-type { border-top: none; }

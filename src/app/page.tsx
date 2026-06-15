@@ -73,9 +73,10 @@ export default function InboxPage() {
     setFlash({
       kind: "ok",
       text:
-        data.processed > 0
+        (data.processed > 0
           ? `Processed ${data.processed} new email(s) into encrypted derived data.`
-          : `No new emails to process (all ${data.skipped} sample emails already done).`,
+          : `No new emails to process (all ${data.skipped} sample emails already done).`) +
+        (data.aiProvider ? ` AI used: ${data.aiProvider}.` : ""),
     });
   };
 
@@ -119,9 +120,10 @@ export default function InboxPage() {
   return (
     <div>
       <div className="banner">
-        <strong>Prototype — synthetic data only.</strong> Every email below is fake. The
-        “AI” is a local rule-based placeholder (no internet, no API key). Encryption keys
-        here are demo-grade, not production-grade.
+        <strong>Prototype — synthetic data only.</strong> Every email below is fake. The AI
+        runs <strong>100% locally</strong> (Apertus 8B via Ollama, no internet, no API key);
+        if Ollama isn’t running it falls back to an offline rule-based placeholder. Encryption
+        keys here are demo-grade, not production-grade.
       </div>
 
       <h1>Inbox</h1>
@@ -155,6 +157,8 @@ export default function InboxPage() {
 
       {flash && <div className={`flash ${flash.kind}`}>{flash.text}</div>}
 
+      {activeCount > 0 && <SearchBox />}
+
       {loading ? (
         <p className="empty">Loading…</p>
       ) : items.length === 0 ? (
@@ -171,6 +175,57 @@ export default function InboxPage() {
           )
         )
       )}
+    </div>
+  );
+}
+
+function SearchBox() {
+  const [q, setQ] = useState("");
+  const [result, setResult] = useState<{
+    mode: string;
+    provider: string;
+    hits: { id: string; subject: string; from: string; summary: string; score: number }[];
+  } | null>(null);
+  const [searching, setSearching] = useState(false);
+
+  const run = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!q.trim()) return;
+    setSearching(true);
+    const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`, { cache: "no-store" });
+    setResult(await res.json());
+    setSearching(false);
+  };
+
+  return (
+    <div className="card" style={{ background: "#fbfcff" }}>
+      <form onSubmit={run} className="toolbar" style={{ marginBottom: result ? 12 : 0 }}>
+        <input
+          className="search-input"
+          placeholder="Search by meaning — e.g. “deadline I might miss”"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
+        <button className="btn-secondary btn-small" type="submit" disabled={searching}>
+          {searching ? "Searching…" : "Search"}
+        </button>
+        {result && (
+          <span className="note">
+            {result.mode === "semantic" ? "local semantic search" : "offline keyword match"}
+          </span>
+        )}
+      </form>
+      {result &&
+        (result.hits.length === 0 ? (
+          <p className="note" style={{ margin: 0 }}>No matches among active items.</p>
+        ) : (
+          result.hits.map((h) => (
+            <div key={h.id} className="search-hit">
+              <span className="badge label">{Math.round(h.score * 100)}%</span>{" "}
+              <strong>{h.subject}</strong> — <span className="note">{h.summary}</span>
+            </div>
+          ))
+        ))}
     </div>
   );
 }
