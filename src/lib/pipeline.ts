@@ -1,0 +1,86 @@
+import { prisma } from "@/lib/db";
+import { encrypt } from "@/lib/crypto";
+import { getKeyVault } from "@/lib/keyvault/LocalKeyVault";
+import { getAIProvider } from "@/lib/ai";
+import { SampleDataSource } from "@/lib/email/SampleDataSource";
+import type { EmailSource } from "@/lib/email/EmailSource";
+import { recordAudit } from "@/lib/audit";
+import { computeForgetAt, getForgetInterval } from "@/lib/settings";
+import type { DerivedPayload } from "@/lib/types";
+
+// The core "process the inbox" loop:
+//   raw email -> AI derives summary/triage/draft -> encrypt derived data with a
+//   fresh per-item key -> store ciphertext + audit "PROCESSED".
+//
+// The raw email body is used in-memory only and is NEVER written to the database.
+export async function processInbox(
+  source: EmailSource = new SampleDataSource()
+): Promise<{ processed: number; skipped: number }> {
+  const ai = getAIProvider();
+  const vault = getKeyVault();
+  const interval = await getForgetInterval();
+
+  const emails = await source.listEmails();
+  let processed = 0;
+  let skipped = 0;
+
+  for (const email of emails) {
+    // Skip anything we've already turned into a derived item (active or forgotten).
+    const existing = await prisma.derivedItem.findUnique({
+      where: { sourceId: email.id },
+    });
+    if (existing) {
+      skipped++;
+      continue;
+    }
+
+    // Run the (placeholder) AI over the synthetic email.
+    const [summary, triage, draftReply] = await Promise.all([
+      ai.summarize(email),
+      ai.triage(email),
+      ai.draftReply(email),
+    ]);
+
+    const payload: DerivedPayload = {
+      sourceId: email.id,
+      from: email.from,
+      subject: email.subject,
+      receivedAt: email.receivedAt,
+      summary,
+      priority: triage.priority,
+      triageLabel: triage.triageLabel,
+      draftReply,
+    };
+
+    // Encrypt the derived payload under its own fresh key.
+    const { keyId, key } = await vault.issueKey();
+    const enc = encrypt(JSON.stringify(payload), key);
+
+    const processedAt = new Date();
+    const forgetAt = computeForgetAt(processedAt, interval);
+
+    await prisma.derivedItem.create({
+      data: {
+        sourceId: email.id,
+        status: "ACTIVE",
+        processedAt,
+        forgetAt,
+        ciphertext: enc.ciphertext,
+        iv: enc.iv,
+        authTag: enc.authTag,
+        keyId,
+      },
+    });
+
+    // Audit: record THAT we processed an item. No content, no key.
+    await recordAudit({
+      event: "PROCESSED",
+      message: `Processed 1 email into encrypted derived data (per-item key issued).`,
+      sourceRef: email.id,
+    });
+
+    processed++;
+  }
+
+  return { processed, skipped };
+}
