@@ -20,15 +20,6 @@ _Last updated: 2026-06-19_
 - **Fix:** serve Apertus on a **Canadian GPU host** (e.g. ServaRica "Bee", Tesla P40).
 - **Status:** Open (environment/hardware, not a code defect).
 
-### BUG-002 — Triage over-labels emails "Urgent"
-- **Severity:** Low (model quality / cosmetic)
-- **Where:** `src/lib/ai/ApertusLocalProvider.ts` (`triage`).
-- **Symptom:** Apertus sometimes marks an email "Urgent" while its own summary says
-  "no reply needed" (observed on the patient-referral sample).
-- **Fix idea:** tighten the triage prompt with explicit criteria and/or few-shot
-  examples for each priority; consider post-validation against the summary.
-- **Status:** Open.
-
 ### BUG-003 — No progress indicator for long processing runs
 - **Severity:** Low (UX)
 - **Where:** `src/app/page.tsx` + `/api/process` (single blocking request).
@@ -49,6 +40,12 @@ _Last updated: 2026-06-19_
 ---
 
 ## Resolved
+
+### BUG-002 — Triage over-labeled emails "Urgent"
+- **Resolved 2026-06-19.** Rewrote the triage prompt in `ApertusLocalProvider` with
+  an explicit, ordered rubric for each priority ("Urgent" only for an imminent hard
+  deadline / time-sensitive consequence) and a preferred set of triage labels. Being
+  prompt-based, results are improved but still model-dependent.
 
 ### BUG-R01 — Apertus replied in German/French
 - **Resolved 2026-06-19.** Hardened the system prompt + per-instruction wording in

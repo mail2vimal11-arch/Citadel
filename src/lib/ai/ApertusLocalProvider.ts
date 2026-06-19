@@ -71,11 +71,22 @@ export class ApertusLocalProvider implements AIProvider {
           {
             role: "user",
             content:
-              "Triage this email. Respond ONLY with JSON of the form " +
-              '{"priority": "...", "triageLabel": "..."}. ' +
-              `"priority" must be exactly one of: ${PRIORITIES.join(", ")}. ` +
-              '"triageLabel" is a 1-3 word category such as "Client matter", ' +
-              '"Scheduling", "Finance / billing", or "Newsletter / notice".\n\n' +
+              "Triage this email. Respond ONLY with JSON: " +
+              '{"priority": "...", "triageLabel": "..."}.\n\n' +
+              `"priority" must be EXACTLY one of: ${PRIORITIES.join(", ")}.\n` +
+              "Choose using these rules, in order. Be conservative — most emails are " +
+              "NOT urgent:\n" +
+              '- "Urgent": ONLY if the email states a hard deadline within ~2 days, or a ' +
+              "serious time-sensitive consequence (e.g. a filing/lien deadline, something " +
+              '"expires", "by Monday", "cannot wait"). If no explicit imminent deadline, it ' +
+              "is not Urgent.\n" +
+              '- "Action needed": it asks YOU for a reply, decision, or task, but with no ' +
+              "imminent hard deadline (a question, a request, a draft to review, \"this week\").\n" +
+              '- "FYI": informational and relevant, but needs no action from you (status ' +
+              "updates, confirmations, meeting reminders).\n" +
+              '- "Low": newsletters, digests, marketing, automated/system notices.\n\n' +
+              '"triageLabel" is a 1-3 word category. Prefer one of: "Client matter", ' +
+              '"Scheduling", "Finance / billing", "Newsletter / notice", "Correspondence".\n\n' +
               emailToText(email),
           },
         ],
