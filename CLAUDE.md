@@ -1,0 +1,68 @@
+# Project Memory — Sovereign Inbox
+
+> This file is read automatically by Claude Code as project memory. Keep it short,
+> current, and factual. For the human-facing overview see `PROJECT.md`.
+
+## What this is
+A **concept prototype** of "Sovereign Inbox": a privacy-first email assistant for
+Canadian regulated professionals (lawyers, healthcare). It runs an AI pass over
+**synthetic** emails, stores only the AI-derived data (encrypted per-item), and
+**forgets** that data on a schedule by destroying the per-item key
+("crypto-shredding"), with a content-free audit log proving it.
+
+**Hard rules:** synthetic data only · AI runs 100% locally via Ollama · never log
+keys or decrypted content · forget must be irreversible · mark production-only
+concerns with `// TODO(production):`.
+
+## Stack
+Next.js 14.2.35 (App Router) · TypeScript · SQLite via Prisma 5.22 · local Ollama
+(Apertus 8B Instruct for chat, `nomic-embed-text` for search). No cloud calls.
+
+## Key commands
+```bash
+npm install
+npx prisma db push                 # create/refresh local SQLite (prisma/dev.db)
+npm run demo                       # db push + next dev  (localhost:3000)
+npx next dev -H 0.0.0.0 -p 3000    # bind to all interfaces (VPS)
+npx tsc --noEmit                   # typecheck
+npx next build                     # full build (set AI_PROVIDER=heuristic if no Ollama)
+```
+
+## Architecture (the swappable seams)
+All app code talks to interfaces, never concrete impls. Selectors are the only
+lines to change for production.
+- `src/lib/email/EmailSource.ts` → `SampleDataSource` (live) · `GmailSource` /
+  `MicrosoftGraphSource` (stubs).
+- `src/lib/ai/AIProvider.ts` → `ApertusLocalProvider` (Ollama) · `LocalHeuristicProvider`
+  (offline fallback). Selected in `src/lib/ai/index.ts` via `AI_PROVIDER`
+  (`auto`|`apertus`|`heuristic`). All model traffic goes through
+  `src/lib/ai/ollamaClient.ts` (the one seam to repoint at Canadian infra).
+- `src/lib/embeddings/EmbeddingProvider.ts` → `LocalEmbeddingProvider`
+  (`nomic-embed-text`). Powers in-memory semantic search (`src/lib/search.ts`,
+  `/api/search`); vectors are never persisted.
+- `src/lib/keyvault/KeyVault.ts` → `LocalKeyVault` (DEMO ONLY, insecure — keys live
+  beside data). Crypto in `src/lib/crypto.ts` (AES-256-GCM).
+- Pipeline `src/lib/pipeline.ts`; forget engine `src/lib/forget/forgetEngine.ts`
+  (lazy sweep on read); audit `src/lib/audit.ts`; settings `src/lib/settings.ts`.
+
+## Env vars (`.env`)
+`DATABASE_URL` · `AI_PROVIDER` · `OLLAMA_BASE_URL` · `OLLAMA_MODEL` ·
+`OLLAMA_EMBED_MODEL`. The committed `.env` defaults to `AI_PROVIDER="auto"`.
+
+## Conventions
+- Match the heavy, plain-language comment style already in `src/lib/**`.
+- The audit log must stay **content-free** (only non-sensitive strings).
+- Raw email bodies are in-memory only — never written to the DB.
+- Every production-only concern gets a `// TODO(production):` marker.
+
+## Status (2026-06-19)
+Milestones 1–6 complete. Real Apertus runs locally; verified end-to-end on a
+Hostinger VPS (English output, encrypt → forget → audit all working). Work lives on
+branch `claude/sovereign-inbox-prototype-o03qrz` (PR #3, draft). See `CHANGELOG.md`
+and `OPEN_BUGS.md`.
+
+## Gotchas (learned the hard way)
+- Apertus needs its **chat template** applied or it rambles (math) / replies in
+  German. Use the community instruct tag or build `FROM` it — never a bare `.gguf`.
+- 8B on **CPU-only** hosts is slow (~minutes for all 15 emails). GPU host fixes it.
+- Run commands from inside the project dir or Prisma can't find the schema.

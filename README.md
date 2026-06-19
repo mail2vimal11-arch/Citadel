@@ -150,6 +150,91 @@ This is the part to show design partners. Here's a 2-minute script:
 
 ---
 
+## Run it on a server (VPS) for a shared demo
+
+Want design partners to open a link instead of watching your laptop? You can host
+the same app on a Linux VPS. This is still **synthetic data only** — treat the box
+as a throwaway demo server. Prefer a **Canadian** host (e.g. a Montréal-based
+provider) so it lines up with the product's data-residency story.
+
+> ⚠️ **Sovereignty note:** a generic VPS in the US/EU is fine for *this fake-data
+> demo*, but it is **not** Canadian-controlled hosting. For anything beyond a demo,
+> use a Canadian region and complete the production items in `ARCHITECTURE.md`.
+
+### One-time setup (Ubuntu)
+
+```bash
+# 1. Node.js 20 LTS (Ubuntu's default `apt install nodejs` is too old)
+apt-get update && apt-get install -y curl
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+apt-get install -y nodejs
+node --version            # expect v20.x
+
+# 2. Ollama + the models (see Step 1 above for details)
+curl -fsSL https://ollama.com/install.sh | sh
+ollama pull MichelRosselli/apertus:8b-instruct-2509-q4_k_m
+ollama pull nomic-embed-text
+
+# 3. The app
+git clone https://github.com/mail2vimal11-arch/citadel.git
+cd citadel                                 # IMPORTANT: stay in this folder
+git checkout claude/sovereign-inbox-prototype-o03qrz
+npm install
+```
+
+### Configure and run
+
+```bash
+# write .env (use your working model name from `ollama list`)
+cat > .env <<'EOF'
+DATABASE_URL="file:./dev.db"
+AI_PROVIDER="apertus"
+OLLAMA_BASE_URL="http://localhost:11434"
+OLLAMA_MODEL="MichelRosselli/apertus:8b-instruct-2509-q4_k_m"
+OLLAMA_EMBED_MODEL="nomic-embed-text"
+EOF
+
+npx prisma db push
+npx next dev -H 0.0.0.0 -p 3000
+```
+
+Open `http://<your-VPS-IP>:3000`. If it won't load, open port 3000 in **both** the
+server firewall (`ufw allow 3000/tcp`) **and** your host's control-panel firewall.
+
+### Keep it running after you log out (optional)
+
+`next dev` stops when you close the terminal. To keep it alive:
+
+```bash
+npm install -g pm2
+npm run build
+pm2 start "npx next start -H 0.0.0.0 -p 3000" --name sovereign-inbox
+pm2 save
+```
+
+### Security before sharing the link
+- It's fake data, but **don't leave port 3000 open to the whole internet** long-term.
+  Put it behind a password (a reverse proxy such as Caddy/Nginx with basic auth) or
+  restrict the firewall to your own IP.
+- Keep **Ollama bound to localhost** (its default) — never expose port `11434`
+  publicly; it has no authentication.
+
+### Troubleshooting (things we actually hit)
+- **Model replies with gibberish/math, or in German/French** → the chat template
+  isn't being applied. Don't import a bare `.gguf`; use the community **instruct**
+  tag (`MichelRosselli/apertus:8b-instruct-2509-q4_k_m`) or build your model `FROM`
+  it. Details in `OPEN_BUGS.md`.
+- **"Could not find Prisma Schema"** → you're not in the project folder. `cd citadel`
+  first (`pwd` should end in `/citadel`).
+- **`node: command not found`** → install Node 20 via NodeSource (above), not
+  `apt install nodejs`.
+- **Processing is slow / only some emails appear** → expected on a CPU-only box
+  (Apertus runs ~15 emails × 3 passes). Click "Process inbox" again to resume, or
+  pre-process before a live demo. A GPU host makes this fast.
+- **Page won't load but the terminal says `Ready`** → firewall on port 3000 (above).
+
+---
+
 ## ⚠️ Important: what is real vs. placeholder
 
 This is a **concept prototype**, not the product. Several things are deliberately
