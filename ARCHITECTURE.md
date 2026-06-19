@@ -141,6 +141,10 @@ per item; destroying it makes that item unrecoverable.
 - [ ] **Compliance artifacts** — PIPEDA/provincial-health-privacy alignment, a
       Threat & Impact Assessment (TIA), retention/forget policy, and audit-log
       retention/export controls.
+- [ ] **Dependency hardening** — pinned to Next.js 14.2.35 (clears the Dec 2025
+      critical advisory). Remaining audit flags are DoS/image-optimizer/middleware
+      issues not exercised by this app; a full upgrade to the Next.js 16 line
+      (React 19) is the production follow-up. Re-run `npm audit` on each release.
 
 ## Security notes honored in the prototype
 
