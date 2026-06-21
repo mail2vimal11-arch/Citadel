@@ -33,3 +33,7 @@ next-env.d.ts
 # OAuth tokens — the prototype stores the Gmail refresh token here locally.
 # NEVER commit this. TODO(production): real per-user secrets manager instead.
 /.citadel-secrets/
+
+# Docker runtime env (holds Google secrets) — never commit; see .env.docker.example
+.env.docker
+/data/

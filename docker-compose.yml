@@ -1,0 +1,37 @@
+# Citadel — deploy alongside the existing Traefik stack on this host.
+# Traefik runs in host-network mode and discovers this container by the labels
+# below (same convention as aletheos-website). We add our own bridge network and
+# touch nothing existing.
+
+services:
+  citadel:
+    build: .
+    image: citadel:latest
+    container_name: citadel
+    restart: unless-stopped
+    env_file: .env.docker
+    environment:
+      NODE_ENV: production
+      # SQLite lives on a named volume so it survives rebuilds.
+      DATABASE_URL: "file:/app/data/dev.db"
+    # Let the container reach Ollama running on the host.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - citadel-data:/app/data
+      - citadel-secrets:/app/.citadel-secrets
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.citadel.entrypoints=websecure"
+      - "traefik.http.routers.citadel.rule=Host(`citadel.aletheos.tech`)"
+      - "traefik.http.routers.citadel.tls=true"
+      - "traefik.http.routers.citadel.tls.certresolver=letsencrypt"
+      - "traefik.http.services.citadel.loadbalancer.server.port=3000"
+
+volumes:
+  citadel-data:
+  citadel-secrets:
+
+networks:
+  default:
+    name: citadel_default
