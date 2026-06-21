@@ -12,7 +12,9 @@ export async function GET(req: NextRequest) {
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
   const cookieState = req.cookies.get("g_oauth_state")?.value;
-  const home = new URL("/", req.url);
+  // Behind a reverse proxy (Caddy + HTTPS) the app sees an internal http://host,
+  // so prefer an explicitly configured public base URL for the bounce-back.
+  const home = new URL("/", process.env.APP_BASE_URL || req.url);
 
   const finish = (status: string) => {
     home.searchParams.set("gmail", status);
