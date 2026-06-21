@@ -14,8 +14,8 @@ export default function Nav() {
   return (
     <header className="topbar">
       <div className="brand">
-        Sovereign Inbox
-        <small>Privacy-first email assistant — concept prototype</small>
+        Citadel
+        <small>Your sovereign inbox — privacy-first email assistant (concept prototype)</small>
       </div>
       <nav>
         {links.map((l) => (

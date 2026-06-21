@@ -1,4 +1,4 @@
-// Sovereign Inbox — demo data model (local SQLite).
+// Citadel (your sovereign inbox) — demo data model (local SQLite).
 //
 // IMPORTANT: This database stores ONLY AI-derived data (summaries, triage
 // labels, draft replies, lightweight metadata) — never raw mailbox content.

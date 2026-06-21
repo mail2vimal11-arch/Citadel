@@ -1,8 +1,8 @@
 {
-  "name": "sovereign-inbox-prototype",
+  "name": "citadel",
   "version": "0.1.0",
   "private": true,
-  "description": "Sovereign Inbox — privacy-first email assistant concept prototype (synthetic data only).",
+  "description": "Citadel (your sovereign inbox) — privacy-first email assistant concept prototype (synthetic data only).",
   "scripts": {
     "setup": "prisma generate && prisma db push",
     "demo": "prisma db push && next dev",

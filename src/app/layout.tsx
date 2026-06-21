@@ -3,9 +3,9 @@ import "./globals.css";
 import Nav from "@/components/Nav";
 
 export const metadata: Metadata = {
-  title: "Sovereign Inbox — Prototype",
+  title: "Citadel — your sovereign inbox",
   description:
-    "Privacy-first email assistant concept prototype. Synthetic data only.",
+    "Citadel — a privacy-first email assistant concept prototype. Synthetic data only.",
 };
 
 export default function RootLayout({

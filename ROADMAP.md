@@ -32,20 +32,25 @@ Effort is a rough T-shirt size (S / M / L / XL). Infra costs are estimates only.
 - [x] Broaden the pitch to "private, sovereign email for everyone, professional-grade."
 - [x] Define the freemium model (free = real inbox, 2 emails / capped text; Full =
       $15/mo or $10/mo paid annually).
-- [ ] Confirm the product name (working title "Sovereign Inbox" vs. "Citadel").
+- [x] Product name confirmed: **Citadel** (tagline: "your sovereign inbox").
 - [ ] Decide the production data store (Postgres) and hosting region up front so we
       don't migrate twice.
 - **Effort:** S · **Blocks revenue:** no (sets direction)
 
-### Phase 1 — Real mailbox ingestion  ⟵ _start here_
+### Phase 1 — Real mailbox ingestion  ⟵ _start here (Gmail first)_
 Implement the `EmailSource` stubs for real, **read-only** inbox access.
-- Gmail: Gmail API + OAuth (`gmail.readonly` scope) — or IMAP + App Password for a
-  faster first cut on a test account.
-- Microsoft 365: Microsoft Graph + OAuth (`Mail.Read`).
+- **Gmail (first target):** Gmail API + OAuth (`gmail.readonly` scope) — or IMAP +
+  App Password for a faster first cut on a personal test account.
+- **Microsoft 365 (next):** Microsoft Graph + OAuth (`Mail.Read`). Must support
+  **both** account types — register the app as **multi-tenant + personal accounts**
+  and use the **`/common`** authority so it works for corporate/work-or-school
+  (Azure AD) **and** personal Outlook/Hotmail/Live IDs.
 - Keep raw bodies **in memory only** — never written to the DB (existing hard rule).
 - This is what makes the **free tier** demoable to a stranger with their own inbox.
 - **Effort:** L · **Blocks revenue:** yes (no product without it) · **Infra:** OAuth
-  app registration (free), Google security review later for the restricted scope.
+  app registration (free); Google security review later for the restricted Gmail
+  scope; Microsoft app registration for the `/common` (multi-tenant + consumers)
+  audience.
 
 ### Phase 2 — Accounts & multi-tenancy
 You cannot have paying users without logins and hard per-user data isolation.
@@ -122,8 +127,11 @@ cannot afford.
   add-ons ride on top of Full.
 
 ## Open decisions (need a founder call)
-- **Product name:** "Sovereign Inbox" or "Citadel"? (rename touches docs + UI).
-- **First ingestion target:** Gmail or Microsoft 365 first? (suggest Gmail — larger
-  consumer base for the broad-market free tier).
+- ~~Product name~~ → **Citadel** (tagline "your sovereign inbox"). _Decided._
+- ~~First ingestion target~~ → **Gmail** first; **Microsoft 365 next**, covering both
+  corporate (Azure AD) and personal Outlook/Hotmail/Live accounts. _Decided._
+- **Gmail first cut:** Gmail API + OAuth (production-correct, needs Google Cloud
+  setup + later verification) vs. IMAP + App Password (fastest path to test on your
+  own Gmail). _Pending._
 - **KMS choice:** managed Canadian KMS vs. on-prem HSM (cost vs. control).
 - **Hosting vendor:** ServaRica vs. Hostrunway vs. BUZZ HPC (see Phase 4).

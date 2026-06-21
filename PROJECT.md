@@ -1,4 +1,6 @@
-# Sovereign Inbox — Project Overview
+# Citadel — Project Overview
+
+_Citadel — your sovereign inbox._
 
 _Last updated: 2026-06-21 · Status: working concept prototype (v0.1.0)_
 

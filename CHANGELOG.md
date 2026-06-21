@@ -1,11 +1,17 @@
 # Changelog
 
-All notable changes to Sovereign Inbox are recorded here. This is a pre-release
+All notable changes to Citadel (tagline: "your sovereign inbox") are recorded here.
+This is a pre-release
 prototype; versions are documentation milestones, not shipped releases. Format
 loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is not
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **Renamed the product to Citadel** (tagline: "your sovereign inbox"). Updated the
+  UI brand/metadata, docs, `package.json`/lockfile name, and Prisma schema header.
+- **Ingestion targets decided:** Gmail first; Microsoft 365 next, supporting both
+  corporate (Azure AD) and personal Outlook/Hotmail/Live accounts via the Graph
+  `/common` authority (recorded in `ROADMAP.md`).
 - **Repositioning:** broadened the pitch from "Canadian regulated professionals" to
   **"private, sovereign email for everyone, built to a regulated-professional
   standard."** Everyone gets the same product; professionals are the credibility

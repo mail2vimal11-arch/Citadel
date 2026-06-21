@@ -1,10 +1,10 @@
-# Project Memory — Sovereign Inbox
+# Project Memory — Citadel
 
 > This file is read automatically by Claude Code as project memory. Keep it short,
 > current, and factual. For the human-facing overview see `PROJECT.md`.
 
 ## What this is
-A **concept prototype** of "Sovereign Inbox": a privacy-first email assistant for
+A **concept prototype** of **Citadel** ("your sovereign inbox"): a privacy-first email assistant for
 **anyone who wants private, sovereign control of their inbox**, built to a
 regulated-professional standard (lawyers, clinicians, journalists are the
 credibility anchor + premium tier, but everyone gets the same product). It runs an

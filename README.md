@@ -1,4 +1,6 @@
-# Sovereign Inbox — Concept Prototype
+# Citadel — Concept Prototype
+
+> **Citadel** — your sovereign inbox.
 
 A privacy-first email assistant for **anyone who wants private, sovereign control
 of their inbox** — built to a regulated-professional standard (lawyers, clinicians,
@@ -209,7 +211,7 @@ server firewall (`ufw allow 3000/tcp`) **and** your host's control-panel firewal
 ```bash
 npm install -g pm2
 npm run build
-pm2 start "npx next start -H 0.0.0.0 -p 3000" --name sovereign-inbox
+pm2 start "npx next start -H 0.0.0.0 -p 3000" --name citadel
 pm2 save
 ```
 
