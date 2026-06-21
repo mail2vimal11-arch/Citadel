@@ -6,6 +6,16 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **Repositioning:** broadened the pitch from "Canadian regulated professionals" to
+  **"private, sovereign email for everyone, built to a regulated-professional
+  standard."** Everyone gets the same product; professionals are the credibility
+  anchor + premium tier. Updated `PROJECT.md`, `CLAUDE.md`, `README.md`, and the AI
+  system persona in `ApertusLocalProvider`.
+- **Freemium model defined:** free tier = real inbox, AI on up to 2 emails with
+  capped text; Full tier = **$15/mo**, or **$10/mo paid annually**.
+- **`ROADMAP.md` added:** sequenced, effort-sized plan from prototype to paid
+  production (ingestion → accounts → KMS → Canadian hosting → billing, with
+  compliance/storage/hardening as fast-follows).
 - Documentation set: VPS deployment + troubleshooting guide in `README.md`;
   `CLAUDE.md` (project memory), `PROJECT.md` (overview), this changelog, and
   `OPEN_BUGS.md`.

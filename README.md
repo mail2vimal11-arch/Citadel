@@ -1,8 +1,9 @@
 # Sovereign Inbox — Concept Prototype
 
-A privacy-first email assistant for Canadian regulated professionals (lawyers,
-healthcare). This is a **local, demo-only prototype** built to show design
-partners the core idea:
+A privacy-first email assistant for **anyone who wants private, sovereign control
+of their inbox** — built to a regulated-professional standard (lawyers, clinicians,
+journalists are the proof-of-rigor and the premium tier, but everyone gets the same
+product). This is a **local, demo-only prototype** built to show the core idea:
 
 > An AI assistant that reads your email, helps you triage and reply — and then
 > **forgets** the data on a schedule you choose, and can **prove** it forgot.

@@ -5,10 +5,16 @@
 
 ## What this is
 A **concept prototype** of "Sovereign Inbox": a privacy-first email assistant for
-Canadian regulated professionals (lawyers, healthcare). It runs an AI pass over
-**synthetic** emails, stores only the AI-derived data (encrypted per-item), and
-**forgets** that data on a schedule by destroying the per-item key
+**anyone who wants private, sovereign control of their inbox**, built to a
+regulated-professional standard (lawyers, clinicians, journalists are the
+credibility anchor + premium tier, but everyone gets the same product). It runs an
+AI pass over **synthetic** emails, stores only the AI-derived data (encrypted
+per-item), and **forgets** that data on a schedule by destroying the per-item key
 ("crypto-shredding"), with a content-free audit log proving it.
+
+**Going to production:** see `ROADMAP.md` (sequenced gates) and `PROJECT.md`
+(positioning + freemium pricing: free = real inbox capped at 2 emails / limited
+text; Full = $15/mo or $10/mo paid annually).
 
 **Hard rules:** synthetic data only · AI runs 100% locally via Ollama · never log
 keys or decrypted content · forget must be irreversible · mark production-only

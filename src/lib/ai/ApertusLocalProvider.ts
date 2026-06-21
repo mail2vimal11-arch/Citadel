@@ -19,8 +19,9 @@ import { LocalHeuristicProvider } from "./LocalHeuristicProvider";
 const PRIORITIES: Priority[] = ["Urgent", "Action needed", "FYI", "Low"];
 
 const SYSTEM = [
-  "You are a careful email assistant for a Canadian regulated professional",
-  "(a lawyer or healthcare provider).",
+  "You are a careful email assistant for a privacy-conscious person. They may be a",
+  "regulated professional (a lawyer, clinician, or journalist) or simply someone who",
+  "wants their email handled with that level of care and confidentiality.",
   "ALWAYS respond in clear, professional Canadian English, no matter what",
   "language the email is written in. Never reply in German, French, or any",
   "other language. You never invent facts that are not in the email. You never",
