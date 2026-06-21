@@ -17,10 +17,15 @@ export async function GET() {
   }
   const state = newState();
   const res = NextResponse.redirect(buildConsentUrl(state));
+  // Mark the cookie Secure only when the OAuth flow actually runs over HTTPS
+  // (i.e. the redirect URI is https). Over an http://localhost tunnel — how the
+  // VPS is tested — a Secure cookie would not be sent back, breaking the state
+  // check, even under a production build. Key it off the real scheme instead.
+  const secure = (process.env.GOOGLE_OAUTH_REDIRECT ?? "").startsWith("https://");
   res.cookies.set("g_oauth_state", state, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure,
     path: "/",
     maxAge: 600,
   });
