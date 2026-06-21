@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 import { encrypt } from "@/lib/crypto";
 import { getKeyVault } from "@/lib/keyvault/LocalKeyVault";
 import { resolveAIProvider } from "@/lib/ai";
-import { SampleDataSource } from "@/lib/email/SampleDataSource";
+import { getEmailSource } from "@/lib/email";
 import type { EmailSource } from "@/lib/email/EmailSource";
 import { recordAudit } from "@/lib/audit";
 import { computeForgetAt, getForgetInterval } from "@/lib/settings";
@@ -12,15 +12,18 @@ import type { DerivedPayload } from "@/lib/types";
 //   raw email -> AI derives summary/triage/draft -> encrypt derived data with a
 //   fresh per-item key -> store ciphertext + audit "PROCESSED".
 //
-// The raw email body is used in-memory only and is NEVER written to the database.
+// The mailbox is chosen by getEmailSource() (synthetic demo data, or a connected
+// Gmail account) — this loop never cares which. The raw email body is used
+// in-memory only and is NEVER written to the database.
 export async function processInbox(
-  source: EmailSource = new SampleDataSource()
-): Promise<{ processed: number; skipped: number; aiProvider: string }> {
+  source?: EmailSource
+): Promise<{ processed: number; skipped: number; aiProvider: string; emailSource: string }> {
   const ai = await resolveAIProvider();
   const vault = getKeyVault();
   const interval = await getForgetInterval();
 
-  const emails = await source.listEmails();
+  const src = source ?? (await getEmailSource());
+  const emails = await src.listEmails();
   let processed = 0;
   let skipped = 0;
 
@@ -34,7 +37,7 @@ export async function processInbox(
       continue;
     }
 
-    // Run the (placeholder) AI over the synthetic email.
+    // Run the AI over the email (raw body in memory only).
     const [summary, triage, draftReply] = await Promise.all([
       ai.summarize(email),
       ai.triage(email),
@@ -83,5 +86,5 @@ export async function processInbox(
     processed++;
   }
 
-  return { processed, skipped, aiProvider: ai.name };
+  return { processed, skipped, aiProvider: ai.name, emailSource: src.name };
 }

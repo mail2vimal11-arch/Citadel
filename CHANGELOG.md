@@ -7,6 +7,13 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **Real Gmail ingestion (read-only):** implemented `GmailSource` against the Gmail
+  API with OAuth 2.0 (`gmail.readonly`), plus the sign-in flow
+  (`/api/auth/google`, `/callback`, `/status`) and a `getEmailSource()` selector
+  (`EMAIL_SOURCE=auto|sample|gmail`). Raw bodies are processed in memory only and
+  never stored. The inbox UI gains Connect/Disconnect Gmail and an honest
+  "connected to real mail" banner. OAuth tokens live in a gitignored local file
+  (`/.citadel-secrets/`) — `TODO(production)`: per-user secrets manager.
 - **Renamed the product to Citadel** (tagline: "your sovereign inbox"). Updated the
   UI brand/metadata, docs, `package.json`/lockfile name, and Prisma schema header.
 - **Ingestion targets decided:** Gmail first; Microsoft 365 next, supporting both

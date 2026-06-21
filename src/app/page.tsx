@@ -50,6 +50,15 @@ export default function InboxPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState<{ kind: "ok" | "info"; text: string } | null>(null);
+  const [gmail, setGmail] = useState<{ configured: boolean; connected: boolean; email?: string }>({
+    configured: false,
+    connected: false,
+  });
+
+  const loadGmail = useCallback(async () => {
+    const res = await fetch("/api/auth/google/status", { cache: "no-store" });
+    setGmail(await res.json());
+  }, []);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/items", { cache: "no-store" });
@@ -61,7 +70,30 @@ export default function InboxPage() {
 
   useEffect(() => {
     load();
-  }, [load]);
+    loadGmail();
+  }, [load, loadGmail]);
+
+  // Show a message after returning from the Google OAuth redirect, then clean
+  // the ?gmail=... param out of the URL.
+  useEffect(() => {
+    const status = new URLSearchParams(window.location.search).get("gmail");
+    if (!status) return;
+    const messages: Record<string, { kind: "ok" | "info"; text: string }> = {
+      connected: { kind: "ok", text: "Gmail connected. “Process inbox” now reads your real mail (read-only)." },
+      denied: { kind: "info", text: "Gmail connection cancelled — still using synthetic demo data." },
+      error: { kind: "info", text: "Couldn’t connect Gmail. Check your Google setup and try again." },
+    };
+    if (messages[status]) setFlash(messages[status]);
+    window.history.replaceState({}, "", window.location.pathname);
+  }, []);
+
+  const disconnectGmail = async () => {
+    setBusy(true);
+    await fetch("/api/auth/google/status", { method: "DELETE" });
+    await loadGmail();
+    setBusy(false);
+    setFlash({ kind: "info", text: "Gmail disconnected. Back to synthetic demo data." });
+  };
 
   const process = async () => {
     setBusy(true);
@@ -75,8 +107,9 @@ export default function InboxPage() {
       text:
         (data.processed > 0
           ? `Processed ${data.processed} new email(s) into encrypted derived data.`
-          : `No new emails to process (all ${data.skipped} sample emails already done).`) +
-        (data.aiProvider ? ` AI used: ${data.aiProvider}.` : ""),
+          : `No new emails to process (all ${data.skipped} already done).`) +
+        (data.emailSource ? ` Source: ${data.emailSource}.` : "") +
+        (data.aiProvider ? ` AI: ${data.aiProvider}.` : ""),
     });
   };
 
@@ -119,12 +152,22 @@ export default function InboxPage() {
 
   return (
     <div>
-      <div className="banner">
-        <strong>Prototype — synthetic data only.</strong> Every email below is fake. The AI
-        runs <strong>100% locally</strong> (Apertus 8B via Ollama, no internet, no API key);
-        if Ollama isn’t running it falls back to an offline rule-based placeholder. Encryption
-        keys here are demo-grade, not production-grade.
-      </div>
+      {gmail.connected ? (
+        <div className="banner" style={{ background: "#fff4e5", borderColor: "#f0c27b" }}>
+          <strong>Connected to a real Gmail ({gmail.email ?? "your account"}) — read-only.</strong>{" "}
+          Message bodies are processed <strong>in memory only</strong> and never stored; only the
+          encrypted AI-derived summary/triage/draft is kept. The AI still runs{" "}
+          <strong>100% locally</strong>. ⚠️ Encryption keys here are <strong>demo-grade</strong> —
+          don’t connect a truly sensitive account on this prototype.
+        </div>
+      ) : (
+        <div className="banner">
+          <strong>Prototype — synthetic data only.</strong> Every email below is fake. The AI
+          runs <strong>100% locally</strong> (Apertus 8B via Ollama, no internet, no API key);
+          if Ollama isn’t running it falls back to an offline rule-based placeholder. Encryption
+          keys here are demo-grade, not production-grade.
+        </div>
+      )}
 
       <h1>Inbox</h1>
       <p className="subtitle">
@@ -150,6 +193,16 @@ export default function InboxPage() {
             Reset demo
           </button>
         )}
+        {gmail.configured &&
+          (gmail.connected ? (
+            <button className="btn-secondary" onClick={disconnectGmail} disabled={busy}>
+              Disconnect Gmail
+            </button>
+          ) : (
+            <a className="btn-secondary" href="/api/auth/google">
+              Connect Gmail
+            </a>
+          ))}
         <span className="note">
           {activeCount} active · {forgottenCount} forgotten
         </span>
@@ -163,8 +216,8 @@ export default function InboxPage() {
         <p className="empty">Loading…</p>
       ) : items.length === 0 ? (
         <div className="empty">
-          No items yet. Click <strong>“Process inbox”</strong> to run the AI over the 15
-          synthetic sample emails.
+          No items yet. Click <strong>“Process inbox”</strong> to run the AI over{" "}
+          {gmail.connected ? "your recent Gmail messages" : "the 15 synthetic sample emails"}.
         </div>
       ) : (
         items.map((item) =>

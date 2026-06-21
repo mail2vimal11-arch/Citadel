@@ -34,13 +34,21 @@ infrastructure — no API keys or cloud endpoints exist anywhere in the app.
 ## The three interfaces
 
 ### 1. `EmailSource` — `src/lib/email/EmailSource.ts`
-`listEmails(): Promise<RawEmail[]>` — read-only fetch of messages.
+`listEmails(): Promise<RawEmail[]>` — read-only fetch of messages. The mailbox is
+chosen in one place, `src/lib/email/index.ts` (`getEmailSource()`), via the
+`EMAIL_SOURCE` env var (`auto` | `sample` | `gmail`).
 
 | Implementation | File | Status |
 |---|---|---|
 | `SampleDataSource` | `src/lib/email/SampleDataSource.ts` | ✅ used in demo (synthetic) |
-| `GmailSource` | `src/lib/email/GmailSource.ts` | 🚧 stub — `TODO(production)` |
-| `MicrosoftGraphSource` | `src/lib/email/MicrosoftGraphSource.ts` | 🚧 stub — `TODO(production)` |
+| `GmailSource` | `src/lib/email/GmailSource.ts` | ✅ real — read-only Gmail API (`gmail.readonly`) via OAuth 2.0; bodies in memory only |
+| `MicrosoftGraphSource` | `src/lib/email/MicrosoftGraphSource.ts` | 🚧 stub — `TODO(production)` (next; must cover Azure AD + personal accounts via `/common`) |
+
+OAuth + token storage for Gmail live in `src/lib/email/googleAuth.ts` (the consent
+URL, code/refresh exchange, and a local **gitignored** token file). The sign-in
+routes are `src/app/api/auth/google` (start), `.../callback`, and `.../status`
+(connect-state + disconnect). `TODO(production)`: per-user tokens in a
+Canadian-controlled secrets manager — never a file or the app DB.
 
 ### 2. `AIProvider` — `src/lib/ai/AIProvider.ts`
 `summarize()`, `triage()`, `draftReply()`. Selected in `src/lib/ai/index.ts`
@@ -119,8 +127,13 @@ per item; destroying it makes that item unrecoverable.
 
 ## Every `TODO(production)` seam (checklist)
 
-- [ ] **Real mailbox connectors** — `GmailSource`, `MicrosoftGraphSource`:
-      read-only OAuth, least-privilege scopes, tokens in a real secrets manager.
+- [x] **Gmail connector** — `GmailSource`: read-only Gmail API + OAuth 2.0
+      (`gmail.readonly`) is implemented. _Remaining for production:_ move tokens
+      from the local file to a Canadian-controlled secrets manager, make them
+      per-user, and complete Google's verification for the restricted scope.
+- [ ] **Microsoft 365 connector** — `MicrosoftGraphSource`: read-only `Mail.Read`
+      via the `/common` authority (corporate Azure AD **and** personal Outlook/
+      Hotmail/Live accounts); tokens in a real secrets manager.
 - [ ] **Canadian-hosted AI & embeddings** — the prototype already runs the real
       Apertus model locally; for production serve that same Apertus model (and
       the embedding model) on Canadian-controlled infrastructure and repoint

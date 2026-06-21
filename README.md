@@ -153,6 +153,49 @@ This is the part to show design partners. Here's a 2-minute script:
 
 ---
 
+## Connect a real Gmail (optional — read-only)
+
+By default Citadel reads 15 fake sample emails. You can instead point it at a
+**real Gmail account, read-only**, to see the AI work on genuine mail. The raw
+messages are processed **in memory only** and never written to the database —
+only the encrypted AI-derived summary/triage/draft is stored.
+
+> ⚠️ The demo key vault is **not** production-grade. Use a **throwaway test
+> Gmail**, not an account with anything sensitive in it.
+
+**One-time Google setup** (~10 min):
+
+1. At **console.cloud.google.com**, create a project (e.g. "Citadel Dev").
+2. **APIs & Services → Library →** enable the **Gmail API**.
+3. **Google Auth Platform → Audience →** keep the app in **Testing** and add your
+   Gmail address under **Test users** (this lets you skip Google's verification).
+4. **Google Auth Platform → Data Access → Add or remove scopes →** add
+   `.../auth/gmail.readonly`. _(Optional for test users — the app also requests it
+   at runtime.)_
+5. **APIs & Services → Credentials → Create credentials → OAuth client ID →
+   Web application.** Add the redirect URI exactly:
+   `http://localhost:3000/api/auth/google/callback`. Copy the **Client ID** and
+   **Client secret**.
+
+**Tell Citadel about it** — create a `.env.local` file (gitignored; never commit
+it) next to `.env`:
+
+```
+GOOGLE_CLIENT_ID="...apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="..."
+```
+
+Restart the app. A **"Connect Gmail"** button appears in the inbox toolbar. Click
+it, approve the consent screen (you'll see an "unverified app" notice for your own
+test app — that's expected; continue), and you'll land back on the inbox now
+reading your real mail. **"Disconnect Gmail"** deletes the stored token and returns
+to synthetic data.
+
+Tuning (optional, in `.env`): `EMAIL_SOURCE` (`auto` | `sample` | `gmail`) and
+`GMAIL_MAX_MESSAGES` (how many recent messages to pull).
+
+---
+
 ## Run it on a server (VPS) for a shared demo
 
 Want design partners to open a link instead of watching your laptop? You can host
@@ -245,7 +288,7 @@ faked or simplified and are clearly marked `TODO(production)` in the code:
 
 | Area | In this prototype | In the real product |
 |---|---|---|
-| **Email source** | 15 fake sample emails | Read-only Gmail / Microsoft 365 connectors (OAuth) |
+| **Email source** | 15 fake sample emails by default; **real read-only Gmail** can be connected (OAuth, `gmail.readonly`) | Gmail **+ Microsoft 365** (incl. personal Outlook), per-user OAuth, tokens in a secrets manager |
 | **The AI** | Real **Apertus 8B** on your own machine via Ollama (offline rule-based stand-in if Ollama isn't running) | The **same Apertus model served on Canadian-controlled infrastructure** |
 | **Search/memory** | Local `nomic-embed-text` embeddings via Ollama, in-memory only | Same embedding model on Canadian-controlled infrastructure |
 | **Encryption keys** | Stored in the same local file as the data (**not secure**) | A **Canadian-controlled HSM/KMS** |

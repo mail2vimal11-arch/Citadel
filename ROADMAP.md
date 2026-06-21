@@ -37,10 +37,13 @@ Effort is a rough T-shirt size (S / M / L / XL). Infra costs are estimates only.
       don't migrate twice.
 - **Effort:** S · **Blocks revenue:** no (sets direction)
 
-### Phase 1 — Real mailbox ingestion  ⟵ _start here (Gmail first)_
+### Phase 1 — Real mailbox ingestion  ⟵ _in progress_
 Implement the `EmailSource` stubs for real, **read-only** inbox access.
-- **Gmail (first target):** Gmail API + OAuth (`gmail.readonly` scope) — or IMAP +
-  App Password for a faster first cut on a personal test account.
+- **Gmail (first target): ✅ built.** `GmailSource` reads via the Gmail API with
+  OAuth 2.0 (`gmail.readonly`), bodies in memory only; Connect/Disconnect in the
+  UI. _Remaining for production:_ per-user tokens in a secrets manager (today a
+  local gitignored file), and Google's verification for the restricted scope
+  before going public (test users work without it).
 - **Microsoft 365 (next):** Microsoft Graph + OAuth (`Mail.Read`). Must support
   **both** account types — register the app as **multi-tenant + personal accounts**
   and use the **`/common`** authority so it works for corporate/work-or-school
@@ -130,8 +133,7 @@ cannot afford.
 - ~~Product name~~ → **Citadel** (tagline "your sovereign inbox"). _Decided._
 - ~~First ingestion target~~ → **Gmail** first; **Microsoft 365 next**, covering both
   corporate (Azure AD) and personal Outlook/Hotmail/Live accounts. _Decided._
-- **Gmail first cut:** Gmail API + OAuth (production-correct, needs Google Cloud
-  setup + later verification) vs. IMAP + App Password (fastest path to test on your
-  own Gmail). _Pending._
+- ~~Gmail first cut~~ → **Gmail API + OAuth**, built (read-only `gmail.readonly`).
+  _Decided & done._
 - **KMS choice:** managed Canadian KMS vs. on-prem HSM (cost vs. control).
 - **Hosting vendor:** ServaRica vs. Hostrunway vs. BUZZ HPC (see Phase 4).
