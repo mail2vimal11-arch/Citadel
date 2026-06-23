@@ -8,22 +8,25 @@ export const metadata = {
 
 export default function Landing() {
   return (
-    <div className="mk">
-      <header className="mk-header">
-        <Link href="/" className="brand">
-          <span className="logo" aria-hidden>C</span>
-          <span className="brand-text">
-            <b>Citadel</b>
-            <small>Your sovereign inbox</small>
-          </span>
-        </Link>
-        <nav className="mk-nav">
-          <a href="#how">How it works</a>
-          <a href="#pricing">Pricing</a>
-          <Link className="btn-primary btn-small" href="/inbox">Open Citadel</Link>
-        </nav>
+    <>
+      <header className="mk-topbar">
+        <div className="mk-topbar-inner">
+          <Link href="/" className="brand">
+            <span className="logo" aria-hidden>C</span>
+            <span className="brand-text">
+              <b>Citadel</b>
+              <small>Your sovereign inbox</small>
+            </span>
+          </Link>
+          <nav className="mk-nav">
+            <a href="#how">How it works</a>
+            <a href="#pricing">Pricing</a>
+            <Link className="btn-primary btn-small" href="/inbox">Open Citadel</Link>
+          </nav>
+        </div>
       </header>
 
+      <div className="mk">
       <section className="mk-hero">
         <div className="mk-eyebrow">Privacy-first email · Canadian-controlled AI</div>
         <h1 className="mk-h1">
@@ -143,7 +146,8 @@ export default function Landing() {
           Concept prototype · synthetic data by default · AI runs locally. © Citadel
         </div>
       </footer>
-    </div>
+      </div>
+    </>
   );
 }
 
