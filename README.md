@@ -244,6 +244,27 @@ prefers Gmail — force one with `EMAIL_SOURCE=microsoft`.)
 
 ---
 
+## Continuous deployment (optional, GitHub Actions → SSH)
+
+`.github/workflows/ci.yml` has a gated **`deploy`** job that ships to the live
+host **after the build passes**, on a push to the deploy branch. It only runs
+once you add these repo secrets (Settings → Secrets and variables → Actions); until
+then it no-ops with a notice, so CI stays green:
+
+| Secret | Meaning |
+|---|---|
+| `SSH_HOST` | host / IP of the server |
+| `SSH_USER` | SSH user |
+| `SSH_KEY` | that user's **private** key (PEM); its public key in the host's `~/.ssh/authorized_keys` |
+| `DEPLOY_PATH` | absolute path to the checked-out repo on the host |
+| `SSH_PORT` | optional (defaults to `22`) |
+
+On each deploy the host runs `git pull` (the deploy branch) + `docker compose up
+-d --build`. The image build runs `prisma db push`, which applies **additive**
+schema changes (e.g. new columns) to the SQLite volume without data loss.
+
+---
+
 ## Run it on a server (VPS) for a shared demo
 
 Want design partners to open a link instead of watching your laptop? You can host

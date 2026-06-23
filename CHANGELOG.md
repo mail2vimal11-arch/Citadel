@@ -7,6 +7,13 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **CI: SSH auto-deploy.** Added a gated `deploy` job to the CI workflow that
+  ships to the live host **after the build passes**, on a push to the deploy
+  branch, via SSH (`git pull` + `docker compose up -d --build`). It no-ops with a
+  notice until the `SSH_HOST` / `SSH_USER` / `SSH_KEY` / `DEPLOY_PATH` repo
+  secrets are set (so CI stays green meanwhile). See README → "Continuous
+  deployment". The container's build runs `prisma db push`, so additive schema
+  changes apply to the SQLite volume with no data loss.
 - **P7 — Write-with-AI + Auto Drafts + Tone (BUILD_PLAN):** the AI now writes in
   the user's voice. A **per-user tone profile** (Professional / Warm / Concise /
   Direct / Formal, stored on the `Setting` row) is folded into the system prompt
