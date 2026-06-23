@@ -32,6 +32,7 @@ npm run demo                       # db push + next dev  (/ = landing, /inbox = 
 docker compose up -d --build       # production container (behind Traefik; see ROADMAP)
 npx next dev -H 0.0.0.0 -p 3000    # bind to all interfaces (VPS)
 npx tsc --noEmit                   # typecheck
+npm test                           # unit tests (Vitest)
 npx next build                     # full build (set AI_PROVIDER=heuristic if no Ollama)
 ```
 

@@ -7,6 +7,11 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **P0 — Test harness (BUILD_PLAN):** added **Vitest** with a `test` script and
+  `npm test` wired into CI (typecheck → test → build). Extracted Gmail MIME
+  parsing into `src/lib/email/gmailParse.ts` (testable without network). 14 seed
+  tests cover the crypto-shredding guarantee, the forget-schedule math, Gmail
+  parsing, and the email-source selector.
 - **Planning docs:** added `COMPETITIVE.md` (Superhuman feature map — D2C vs
   enterprise — and where Citadel matches / differentiates; grammar excluded) and
   `BUILD_PLAN.md` (the product built feature-by-feature, each phase gated on

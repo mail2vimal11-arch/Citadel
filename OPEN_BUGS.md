@@ -78,5 +78,7 @@ _Last updated: 2026-06-23_
   only because data is synthetic. `TODO(production)`: Canadian-region host.
 - **"Reset demo" button** exists for the demo only — real lifecycle is governed solely
   by the forget schedule.
-- **No automated tests / CI** yet. `TODO`: add unit tests (crypto/forget/pipeline) and
-  a build+typecheck CI workflow.
+- ~~No automated tests / CI~~ — **resolved 2026-06-23 (P0).** CI runs
+  typecheck → **Vitest unit tests** → build on every push; 14 tests cover
+  crypto-shredding, forget-schedule math, Gmail parsing, and source selection.
+  `TODO`: broaden coverage (pipeline integration, e2e) as features land.

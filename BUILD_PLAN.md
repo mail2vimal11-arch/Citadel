@@ -25,16 +25,18 @@ T-shirt size (S/M/L). "Gate" phases unblock revenue and should not be skipped.
 
 ## Stage A — Foundation (makes "tested + sellable" real)
 
-### P0 · Test harness  · S
+### P0 · Test harness  · S · ✅ DONE (2026-06-23)
 - **Goal:** every later phase can ship real tests.
-- **Build:** add Vitest; wire `npm test` into the CI workflow; seed tests for
-  the existing core — `crypto` (encrypt/decrypt + key-destroy → unrecoverable),
-  `forgetEngine` (schedule math + sweep), `GmailSource` MIME parsing, and
-  `getEmailSource()` selection.
-- **Test:** the seed tests pass in CI.
-- **Docs:** CHANGELOG; CLAUDE (key commands → add `npm test`); OPEN_BUGS (close
-  "no tests" item).
-- **Done-when:** `npm test` runs in CI and is green.
+- **Built:** added Vitest (+ `vitest.config.ts` with the `@` alias and a `test`
+  script); extracted Gmail MIME parsing into `src/lib/email/gmailParse.ts` so it
+  is testable without network/OAuth; wired `npm test` into CI between typecheck
+  and build.
+- **Tested:** 14 seed tests pass — `crypto` (round-trip + destroyed-key →
+  unrecoverable + tamper + fresh-IV), `settings` (forget-schedule math),
+  `gmailParse` (header/decode/strip/extract/map), `getEmailSource` selection.
+  `tsc --noEmit` and `next build` stay green with tests present.
+- **Docs:** CHANGELOG; CLAUDE (added `npm test`); OPEN_BUGS (tests/CI item
+  closed). Done.
 
 ### P1 · Accounts & multi-tenancy  · L · **Gate**
 - **Goal:** real users with isolated data — prerequisite for anything paid.
