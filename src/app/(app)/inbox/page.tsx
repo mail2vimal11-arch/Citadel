@@ -1,30 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  sortItems,
+  applyDone,
+  keyAction,
+  moveIndex,
+  forgetCountdown,
+  paginate,
+  type Item,
+  type ActiveItem,
+  type ForgottenItem,
+  type Priority,
+} from "@/lib/inboxView";
 
-type Payload = {
-  from: string;
-  subject: string;
-  receivedAt: string;
-  summary: string;
-  priority: "Urgent" | "Action needed" | "FYI" | "Low";
-  triageLabel: string;
-  draftReply: string;
-};
-type ActiveItem = {
-  id: string;
-  status: "ACTIVE";
-  processedAt: string;
-  forgetAt: string | null;
-  payload: Payload;
-};
-type ForgottenItem = {
-  id: string;
-  status: "FORGOTTEN";
-  processedAt: string;
-  forgottenAt: string;
-};
-type Item = ActiveItem | ForgottenItem;
+const PAGE_SIZE = 20;
+const DONE_KEY = "citadel:done";
 
 const fmt = (iso: string) =>
   new Date(iso).toLocaleString(undefined, {
@@ -34,7 +25,7 @@ const fmt = (iso: string) =>
     minute: "2-digit",
   });
 
-const priorityClass = (p: Payload["priority"]) =>
+const priorityClass = (p: Priority) =>
   p === "Urgent" ? "p-Urgent" : p === "Action needed" ? "p-Action" : p === "FYI" ? "p-FYI" : "p-Low";
 
 const intervalLabel: Record<string, string> = {
@@ -55,6 +46,15 @@ export default function InboxPage() {
     connected: false,
   });
 
+  // Reading UX state.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [doneIds, setDoneIds] = useState<Set<string>>(new Set());
+  const [showDone, setShowDone] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const readingRef = useRef<HTMLDivElement>(null);
+
+  // ---- Data loading --------------------------------------------------------
   const loadGmail = useCallback(async () => {
     const res = await fetch("/api/auth/google/status", { cache: "no-store" });
     setGmail(await res.json());
@@ -73,6 +73,25 @@ export default function InboxPage() {
     loadGmail();
   }, [load, loadGmail]);
 
+  // Restore the client-only "done" set (declutter is a local view, never sent
+  // to the server — it does not delete or forget anything).
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DONE_KEY);
+      if (raw) setDoneIds(new Set(JSON.parse(raw)));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  const persistDone = (next: Set<string>) => {
+    setDoneIds(next);
+    try {
+      localStorage.setItem(DONE_KEY, JSON.stringify([...next]));
+    } catch {
+      /* ignore */
+    }
+  };
+
   // Show a message after returning from the Google OAuth redirect, then clean
   // the ?gmail=... param out of the URL.
   useEffect(() => {
@@ -87,14 +106,28 @@ export default function InboxPage() {
     window.history.replaceState({}, "", window.location.pathname);
   }, []);
 
-  const disconnectGmail = async () => {
-    setBusy(true);
-    await fetch("/api/auth/google/status", { method: "DELETE" });
-    await loadGmail();
-    setBusy(false);
-    setFlash({ kind: "info", text: "Gmail disconnected. Back to synthetic demo data." });
-  };
+  // ---- Derived view --------------------------------------------------------
+  const sorted = useMemo(() => sortItems(items), [items]);
+  const visible = useMemo(() => applyDone(sorted, doneIds, showDone), [sorted, doneIds, showDone]);
+  const paged = useMemo(() => paginate(visible, page, PAGE_SIZE), [visible, page]);
+  const selectedIndex = visible.findIndex((i) => i.id === selectedId);
+  const selected = selectedIndex >= 0 ? visible[selectedIndex] : null;
 
+  const activeCount = items.filter((i) => i.status === "ACTIVE").length;
+  const forgottenCount = items.length - activeCount;
+  const doneCount = sorted.filter((i) => doneIds.has(i.id)).length;
+
+  // Keep the page in sync if the visible list shrinks (e.g. after forgetting).
+  useEffect(() => {
+    if (page > paged.pageCount - 1) setPage(paged.pageCount - 1);
+  }, [page, paged.pageCount]);
+
+  const select = useCallback((id: string | null, withinIndex?: number) => {
+    setSelectedId(id);
+    if (withinIndex !== undefined && withinIndex >= 0) setPage(Math.floor(withinIndex / PAGE_SIZE));
+  }, []);
+
+  // ---- Actions -------------------------------------------------------------
   const process = async () => {
     setBusy(true);
     setFlash(null);
@@ -138,6 +171,14 @@ export default function InboxPage() {
     setFlash({ kind: "info", text: `Logged out & forgot ${data.forgotten} item(s). Keys destroyed.` });
   };
 
+  const disconnectGmail = async () => {
+    setBusy(true);
+    await fetch("/api/auth/google/status", { method: "DELETE" });
+    await loadGmail();
+    setBusy(false);
+    setFlash({ kind: "info", text: "Gmail disconnected. Back to synthetic demo data." });
+  };
+
   const resetDemo = async () => {
     if (!confirm("Reset the demo? This wipes all derived items, keys, and audit events so you can start over.")) return;
     setBusy(true);
@@ -147,9 +188,66 @@ export default function InboxPage() {
     setFlash({ kind: "info", text: "Demo reset. Click “Process inbox” to start again." });
   };
 
-  const activeCount = items.filter((i) => i.status === "ACTIVE").length;
-  const forgottenCount = items.length - activeCount;
+  // Mark the selected item "done" (client-only declutter), then advance.
+  const markDone = useCallback(
+    (id: string) => {
+      const next = new Set(doneIds);
+      next.add(id);
+      persistDone(next);
+      const idx = visible.findIndex((i) => i.id === id);
+      const remaining = visible.filter((i) => i.id !== id);
+      const nextSel = remaining[Math.min(idx, remaining.length - 1)] ?? null;
+      setSelectedId(nextSel ? nextSel.id : null);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [doneIds, visible]
+  );
 
+  // ---- Keyboard navigation -------------------------------------------------
+  // Latest view state lives in a ref so a single listener always sees fresh data.
+  const stateRef = useRef({ visible, selectedIndex, busy });
+  stateRef.current = { visible, selectedIndex, busy };
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      const typing = el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
+      const action = keyAction(e.key);
+      // While typing, only Escape (blur) is honoured so search keeps working.
+      if (typing) {
+        if (e.key === "Escape") (el as HTMLElement).blur();
+        return;
+      }
+      if (!action) return;
+      const { visible: vis, selectedIndex: si, busy: isBusy } = stateRef.current;
+
+      if (action === "next" || action === "prev") {
+        e.preventDefault();
+        if (vis.length === 0) return;
+        const from = si < 0 ? (action === "next" ? -1 : 0) : si;
+        const idx = moveIndex(from, action === "next" ? 1 : -1, vis.length);
+        select(vis[idx].id, idx);
+      } else if (action === "search") {
+        e.preventDefault();
+        searchRef.current?.focus();
+      } else if (action === "refresh") {
+        if (!isBusy) load();
+      } else if (action === "close") {
+        setSelectedId(null);
+      } else if (action === "open") {
+        if (si < 0 && vis.length) select(vis[0].id, 0);
+        readingRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      } else if (action === "done") {
+        if (si >= 0) markDone(vis[si].id);
+      } else if (action === "forget") {
+        if (si >= 0 && vis[si].status === "ACTIVE" && !isBusy) forgetOne(vis[si].id);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [select, load, markDone]); // handlers are stable; state is read via ref
+
+  // ---- Render --------------------------------------------------------------
   return (
     <div>
       {gmail.connected ? (
@@ -204,13 +302,13 @@ export default function InboxPage() {
             </a>
           ))}
         <span className="note">
-          {activeCount} active · {forgottenCount} forgotten
+          {activeCount} active · {forgottenCount} forgotten{doneCount > 0 ? ` · ${doneCount} done` : ""}
         </span>
       </div>
 
       {flash && <div className={`flash ${flash.kind}`}>{flash.text}</div>}
 
-      {activeCount > 0 && <SearchBox />}
+      {activeCount > 0 && <SearchBox inputRef={searchRef} onPick={(id) => select(id, visible.findIndex((i) => i.id === id))} />}
 
       {loading ? (
         <p className="empty">Loading…</p>
@@ -220,19 +318,122 @@ export default function InboxPage() {
           {gmail.connected ? "your recent Gmail messages" : "the 15 synthetic sample emails"}.
         </div>
       ) : (
-        items.map((item) =>
-          item.status === "ACTIVE" ? (
-            <ActiveCard key={item.id} item={item} onForget={forgetOne} busy={busy} />
-          ) : (
-            <ForgottenCard key={item.id} item={item} />
-          )
-        )
+        <div className="inbox-layout">
+          {/* ---- Message list ---- */}
+          <div>
+            <div className="list-tools">
+              <span className="note" style={{ margin: 0 }}>
+                {visible.length} message{visible.length === 1 ? "" : "s"}
+                {paged.pageCount > 1 ? ` · page ${paged.page + 1}/${paged.pageCount}` : ""}
+              </span>
+              {doneCount > 0 && (
+                <button className="btn-secondary btn-small" onClick={() => setShowDone((s) => !s)}>
+                  {showDone ? "Hide done" : `Show done (${doneCount})`}
+                </button>
+              )}
+            </div>
+
+            <ul className="msg-list">
+              {paged.slice.map((item) => (
+                <li key={item.id}>
+                  <button
+                    className={`msg-row ${item.id === selectedId ? "selected" : ""} ${
+                      doneIds.has(item.id) ? "done" : ""
+                    }`}
+                    onClick={() => select(item.id)}
+                  >
+                    {item.status === "ACTIVE" ? (
+                      <>
+                        <span className={`msg-dot ${priorityClass(item.payload.priority)}`} aria-hidden />
+                        <span className="msg-main">
+                          <span className="msg-sender">{item.payload.from}</span>
+                          <span className="msg-subject">{item.payload.subject}</span>
+                          <span className="msg-snippet">{item.payload.summary}</span>
+                        </span>
+                        <span className="msg-side">
+                          <span className="msg-time">{fmt(item.payload.receivedAt)}</span>
+                          <span className="msg-count">{forgetCountdown(item.forgetAt)}</span>
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="msg-dot p-Low" aria-hidden />
+                        <span className="msg-main">
+                          <span className="msg-sender">🔒 Forgotten</span>
+                          <span className="msg-snippet">Content permanently destroyed.</span>
+                        </span>
+                        <span className="msg-side">
+                          <span className="msg-time">{fmt(item.forgottenAt)}</span>
+                        </span>
+                      </>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+
+            {paged.pageCount > 1 && (
+              <div className="pager">
+                <button
+                  className="btn-secondary btn-small"
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  disabled={paged.page === 0}
+                >
+                  ← Prev
+                </button>
+                <span className="note" style={{ margin: 0 }}>
+                  {paged.page + 1} / {paged.pageCount}
+                </span>
+                <button
+                  className="btn-secondary btn-small"
+                  onClick={() => setPage((p) => Math.min(paged.pageCount - 1, p + 1))}
+                  disabled={paged.page >= paged.pageCount - 1}
+                >
+                  Next →
+                </button>
+              </div>
+            )}
+
+            <div className="kbd-hints">
+              <span><span className="kbd">j</span><span className="kbd">k</span> move</span>
+              <span><span className="kbd">e</span> done</span>
+              <span><span className="kbd">f</span> forget</span>
+              <span><span className="kbd">/</span> search</span>
+              <span><span className="kbd">r</span> refresh</span>
+            </div>
+          </div>
+
+          {/* ---- Reading pane ---- */}
+          <div className="reading-pane" ref={readingRef}>
+            {!selected ? (
+              <div className="reading-empty">
+                Select a message — or press <span className="kbd">j</span> to start reading.
+              </div>
+            ) : selected.status === "ACTIVE" ? (
+              <ReadingActive
+                item={selected}
+                done={doneIds.has(selected.id)}
+                busy={busy}
+                onForget={forgetOne}
+                onDone={markDone}
+              />
+            ) : (
+              <ReadingForgotten item={selected} />
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
 }
 
-function SearchBox() {
+function SearchBox({
+  inputRef,
+  onPick,
+}: {
+  inputRef: React.RefObject<HTMLInputElement>;
+  onPick: (id: string) => void;
+}) {
   const [q, setQ] = useState("");
   const [result, setResult] = useState<{
     mode: string;
@@ -254,6 +455,7 @@ function SearchBox() {
     <div className="card">
       <form onSubmit={run} className="toolbar" style={{ marginBottom: result ? 12 : 0 }}>
         <input
+          ref={inputRef}
           className="search-input"
           placeholder="Search by meaning — e.g. “deadline I might miss”"
           value={q}
@@ -273,69 +475,88 @@ function SearchBox() {
           <p className="note" style={{ margin: 0 }}>No matches among active items.</p>
         ) : (
           result.hits.map((h) => (
-            <div key={h.id} className="search-hit">
+            <button key={h.id} className="search-hit search-hit-btn" onClick={() => onPick(h.id)}>
               <span className="badge label">{Math.round(h.score * 100)}%</span>{" "}
               <strong>{h.subject}</strong> — <span className="note">{h.summary}</span>
-            </div>
+            </button>
           ))
         ))}
     </div>
   );
 }
 
-function ActiveCard({
+function ReadingActive({
   item,
-  onForget,
+  done,
   busy,
+  onForget,
+  onDone,
 }: {
   item: ActiveItem;
-  onForget: (id: string) => void;
+  done: boolean;
   busy: boolean;
+  onForget: (id: string) => void;
+  onDone: (id: string) => void;
 }) {
-  const [showDraft, setShowDraft] = useState(false);
   const p = item.payload;
+  const [copied, setCopied] = useState(false);
+  const copyDraft = async () => {
+    try {
+      await navigator.clipboard.writeText(p.draftReply);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard may be unavailable; ignore */
+    }
+  };
   return (
-    <div className="card">
-      <div className="item-head">
-        <div>
-          <div className="item-from">{p.from}</div>
-          <div className="item-subject">{p.subject}</div>
+    <div className="reading">
+      <div className="reading-head">
+        <div className="item-subject" style={{ fontSize: 18, fontWeight: 650, color: "var(--ink)" }}>
+          {p.subject}
         </div>
-        <div className="item-meta">{fmt(p.receivedAt)}</div>
+        <div className="item-from" style={{ marginTop: 4 }}>{p.from}</div>
+        <div className="note" style={{ marginTop: 2 }}>Received {fmt(p.receivedAt)}</div>
       </div>
 
       <div className="badges">
         <span className={`badge ${priorityClass(p.priority)}`}>{p.priority}</span>
         <span className="badge label">{p.triageLabel}</span>
+        {done && <span className="badge label">✓ done</span>}
       </div>
 
-      <div className="summary">{p.summary}</div>
+      <p className="reading-privacy">
+        The raw message body was processed <strong>in memory only</strong> and never stored. Below is
+        the encrypted, AI-derived view — auto-forgets <strong>{forgetCountdown(item.forgetAt)}</strong>.
+      </p>
 
-      <div className="toolbar" style={{ marginBottom: 0 }}>
-        <button className="btn-secondary btn-small" onClick={() => setShowDraft((s) => !s)}>
-          {showDraft ? "Hide suggested reply" : "Show suggested reply"}
+      <div className="reading-section-label">Summary</div>
+      <div className="summary" style={{ marginTop: 4 }}>{p.summary}</div>
+
+      <div className="draft">
+        <div className="draft-label" style={{ display: "flex", justifyContent: "space-between" }}>
+          <span>Suggested reply (draft)</span>
+          <button className="btn-secondary btn-small" onClick={copyDraft}>
+            {copied ? "Copied ✓" : "Copy"}
+          </button>
+        </div>
+        {p.draftReply}
+      </div>
+
+      <div className="toolbar" style={{ marginTop: 14, marginBottom: 0 }}>
+        <button className="btn-secondary btn-small" onClick={() => onDone(item.id)} disabled={done}>
+          {done ? "Done" : "Mark done (e)"}
         </button>
         <button className="btn-danger btn-small" onClick={() => onForget(item.id)} disabled={busy}>
-          Forget now
+          Forget now (f)
         </button>
-        {item.forgetAt && (
-          <span className="note">Auto-forgets {fmt(item.forgetAt)}</span>
-        )}
       </div>
-
-      {showDraft && (
-        <div className="draft">
-          <div className="draft-label">Suggested reply (draft)</div>
-          {p.draftReply}
-        </div>
-      )}
     </div>
   );
 }
 
-function ForgottenCard({ item }: { item: ForgottenItem }) {
+function ReadingForgotten({ item }: { item: ForgottenItem }) {
   const [proof, setProof] = useState<string | null>(null);
-
   const prove = async () => {
     const res = await fetch(`/api/forget?prove=${item.id}`, { cache: "no-store" });
     const d = await res.json();
@@ -348,22 +569,21 @@ function ForgottenCard({ item }: { item: ForgottenItem }) {
       ].join("\n")
     );
   };
-
   return (
-    <div className="card forgotten">
-      <div className="item-head">
-        <div>
-          <span className="lock">🔒 Forgotten</span>
-          <div className="note">
-            Content permanently destroyed. Processed {fmt(item.processedAt)} · forgotten{" "}
-            {fmt(item.forgottenAt)}.
-          </div>
+    <div className="reading">
+      <div className="reading-head">
+        <span className="lock">🔒 Forgotten</span>
+        <div className="note" style={{ marginTop: 6 }}>
+          Content permanently destroyed. Processed {fmt(item.processedAt)} · forgotten {fmt(item.forgottenAt)}.
         </div>
-        <button className="btn-secondary btn-small" onClick={prove}>
-          Prove it’s unrecoverable
-        </button>
       </div>
-      {proof && <div className="proof">{proof}</div>}
+      <p className="reading-privacy">
+        The per-item key was destroyed, so the stored ciphertext can never be decrypted again. Prove it:
+      </p>
+      <button className="btn-secondary btn-small" onClick={prove}>
+        Prove it’s unrecoverable
+      </button>
+      {proof && <div className="proof" style={{ marginTop: 12 }}>{proof}</div>}
     </div>
   );
 }

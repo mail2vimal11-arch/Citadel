@@ -94,7 +94,10 @@ worker (`scheduler.ts`, started by `instrumentation.ts`) runs an all-users
 forget sweep on an interval so items forget on time with no user interaction,
 plus a provider-agnostic Postgres seam (two-line switch + optional compose
 service + migration smoke test). **Stage A (Foundation: P0–P3) is complete.**
-Next is **Stage B / the fast path: P4 (inbox UX) then P5 (Microsoft 365)**. See
+**P4 (inbox reading UX)** is also done: a two-pane reader (message list +
+reading pane) with keyboard nav (`j`/`k`/`e`/`f`/`/`), a client-only "done"
+declutter, and pagination, all over a pure tested view-model
+(`src/lib/inboxView.ts`). Next on the fast path is **P5 (Microsoft 365)**. See
 also `CHANGELOG.md`, `ROADMAP.md`, and `OPEN_BUGS.md`.
 
 ## Gotchas (learned the hard way)

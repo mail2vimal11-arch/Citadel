@@ -134,17 +134,23 @@ To stop the app, return to the terminal and press `Ctrl + C`.
 This is the part to show design partners. Here's a 2-minute script:
 
 1. **Open the Inbox** (`http://localhost:3000/inbox`) and click **"Process inbox."**
-   You'll see 15 emails, each with an AI summary, a colored priority label, and
-   a triage category. Click **"Show suggested reply"** on any of them.
+   You'll get a two-pane reader: a **message list** (sorted by priority, with a
+   colored priority dot, sender, subject, summary snippet, and a live
+   *auto-forgets in…* countdown) beside a **reading pane**. Click a message — or
+   navigate hands-free with the keyboard: **`j`/`k`** to move, **`e`** to mark
+   done (a local declutter — it never deletes or forgets), **`f`** to forget now,
+   **`/`** to jump to search. The reading pane shows the full AI-derived view —
+   summary + a suggested reply you can **copy** — and reminds you the raw body was
+   processed *in memory only* and never stored.
 
 2. **Open the Audit log** (top nav). You'll see a `PROCESSED` entry for each
    email — proof the assistant did the work, with **no email content** stored in
    the log.
 
-3. **Forget one item live.** Back on the Inbox, click **"Forget now"** on any
-   email. It instantly turns into a locked, grey "🔒 Forgotten" card with no
-   content. Click **"Prove it's unrecoverable"** on that card — the app shows
-   you that:
+3. **Forget one item live.** Select an email and click **"Forget now"** in the
+   reading pane (or press **`f`**). Its list row becomes a locked "🔒 Forgotten"
+   entry with no content; open it and click **"Prove it's unrecoverable"** — the
+   app shows you that:
    - the item's encryption **key has been destroyed**,
    - the encrypted bytes are *still in the database*,
    - but a decryption attempt now **fails — the data is gone for good.**

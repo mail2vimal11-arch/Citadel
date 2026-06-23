@@ -101,12 +101,19 @@ T-shirt size (S/M/L). "Gate" phases unblock revenue and should not be skipped.
 
 ## Stage B — Daily-driver email (make switching painless)
 
-### P4 · Inbox list & reading UX  · M
+### P4 · Inbox list & reading UX  · M · ✅ DONE (2026-06-23)
 - **Goal:** a real inbox, not just a process list.
-- **Build:** message list, thread/read view (bodies in memory only), keyboard
-  archive/done, pagination.
-- **Test:** rendering + state tests; smoke note.
-- **Docs:** README (demo script), CHANGELOG.
+- **Built:** two-pane reader — compact message list (priority dot, sender,
+  subject, snippet, time, live forget countdown) + a reading pane (full AI-derived
+  view: summary, suggested reply with copy, badges; raw body never stored).
+  Keyboard nav (`j`/`k`/`Enter`/`o`/`e`/`f`/`/`/`r`/`Esc`), a client-only
+  "done" declutter (localStorage, never sent to server), pagination (20/page),
+  and clickable search hits. Logic extracted to a pure view-model
+  (`src/lib/inboxView.ts`).
+- **Tested:** 13 view-model unit tests (sort, key→action, selection clamp,
+  countdown, declutter, pagination) — 53 total green; `tsc` + `next build` clean;
+  runtime smoke (process 15 → list renders, `/inbox` 200).
+- **Docs:** README (demo script), BUILD_PLAN, CHANGELOG, CLAUDE. Done.
 
 ### P5 · Microsoft 365 ingestion  · L
 - **Goal:** the second mailbox (corporate + personal Outlook).

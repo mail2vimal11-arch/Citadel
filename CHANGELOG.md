@@ -7,6 +7,19 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **P4 — Inbox list & reading UX (BUILD_PLAN):** the inbox is now a real
+  two-pane reader, not a flat process list. A compact **message list** (priority
+  dot, sender, subject, summary snippet, received time, live forget countdown)
+  sits beside a **reading pane** showing the full AI-derived view of the selected
+  item — summary, suggested reply (with copy), badges, and a reminder that the
+  raw body was processed in memory only and never stored. Added **keyboard
+  navigation** (`j`/`k` move, `Enter`/`o` open, `e` mark done, `f` forget now,
+  `/` search, `r` refresh, `Esc` close), a client-only **"done" declutter**
+  (archive-like; persisted in `localStorage`, never sent to the server — it does
+  not forget or delete), and **pagination** (20/page). Search results are now
+  clickable and select the message. The reading logic is extracted to a pure,
+  fully-tested view-model (`src/lib/inboxView.ts`): sorting, key→action mapping,
+  selection movement, countdown, declutter, pagination — 13 new tests (53 total).
 - **P3 — Durable storage + reliable forget scheduler (BUILD_PLAN):** the
   "forgets on schedule, even if you never open the app" promise is now literally
   true. A **background scheduler** (`src/lib/forget/scheduler.ts`), started on
