@@ -4,6 +4,10 @@ _Last updated: 2026-06-21 · Companion to `PROJECT.md` (positioning + pricing) a
 `ARCHITECTURE.md` (the swappable seams). This file sequences the work that turns the
 working **concept prototype** into a **paid, production service**._
 
+> **Feature-by-feature build sequence** (each phase tested + documented) lives in
+> **`BUILD_PLAN.md`**; the Superhuman feature comparison lives in `COMPETITIVE.md`.
+> This file is the higher-level production-gate view.
+
 ---
 
 ## Guiding principle

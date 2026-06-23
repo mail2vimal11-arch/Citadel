@@ -106,6 +106,8 @@ run as fast-follows.
 - `README.md` — how to install, run, deploy on a VPS, and demo the forget feature.
 - `ARCHITECTURE.md` — interfaces + every `TODO(production)` seam.
 - `ROADMAP.md` — sequenced plan from prototype to paid production.
+- `BUILD_PLAN.md` — the product built feature-by-feature (each phase tested + documented).
+- `COMPETITIVE.md` — Superhuman feature map + where Citadel matches / differentiates.
 - `CLAUDE.md` — project memory / quick reference.
 - `CHANGELOG.md` — version history.
 - `OPEN_BUGS.md` — known issues and their status.

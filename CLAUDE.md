@@ -69,7 +69,9 @@ landing at `/` (app at `/inbox`, via an `(app)` route group). **Live at
 `https://citadel.aletheos.tech`** — Docker container behind the host's existing
 Traefik proxy (auto HTTPS). Routes: `/` = landing, `/inbox` `/settings` `/audit`
 = app, `/api/auth/google*` = Gmail OAuth. Work lives on branch
-`claude/sovereign-inbox-prototype-o03qrz` (PR #3, draft). See `CHANGELOG.md`,
+`claude/sovereign-inbox-prototype-o03qrz` (PR #3). Next work is sequenced
+feature-by-feature in `BUILD_PLAN.md` (each phase tested + documented);
+Superhuman feature map in `COMPETITIVE.md`. See also `CHANGELOG.md`,
 `ROADMAP.md`, and `OPEN_BUGS.md`.
 
 ## Gotchas (learned the hard way)

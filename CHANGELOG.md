@@ -7,6 +7,10 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **Planning docs:** added `COMPETITIVE.md` (Superhuman feature map — D2C vs
+  enterprise — and where Citadel matches / differentiates; grammar excluded) and
+  `BUILD_PLAN.md` (the product built feature-by-feature, each phase gated on
+  tests + doc updates). Cross-linked from `PROJECT.md` and `ROADMAP.md`.
 - **Dark, Superhuman-style UI:** redesigned the theme to Superhuman's actual
   palette — near-black canvas with ambient purple/pink/blue glows, the signature
   purple→pink (`#9E6EE5→#FA75F8`) gradient on the primary button and brand mark,
