@@ -310,3 +310,97 @@ button:disabled { opacity: 0.45; cursor: default; }
 .search-hit { padding: 9px 2px; border-top: 1px solid var(--line); font-size: 14px; }
 .search-hit:first-of-type { border-top: none; }
 
+
+/* ============================================================ Marketing page */
+.mk { max-width: 1080px; margin: 0 auto; padding: 0 24px 80px; }
+a.brand, a.brand:hover { text-decoration: none; }
+
+.mk-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 0; }
+.mk-nav { display: flex; align-items: center; gap: 22px; }
+.mk-nav a { color: var(--muted); font-weight: 550; font-size: 14px; }
+.mk-nav a:hover { color: var(--ink); text-decoration: none; }
+.mk-nav a.btn-primary, .mk-nav a.btn-primary:hover { color: #fff; }
+
+.mk-hero { text-align: center; padding: 70px 0 40px; }
+.mk-eyebrow {
+  display: inline-block;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+  border: 1px solid rgba(158, 110, 229, 0.3);
+  padding: 6px 14px;
+  border-radius: 999px;
+  margin-bottom: 26px;
+}
+.mk-h1 {
+  font-size: clamp(46px, 8vw, 84px);
+  line-height: 1.02;
+  letter-spacing: -2px;
+  margin: 0 0 22px;
+  font-weight: 800;
+  background-image: radial-gradient(70% 80% at 50% 40%, #ffffff 0%, rgba(255, 255, 255, 0.58) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.mk-lede { max-width: 660px; margin: 0 auto 30px; font-size: 18px; line-height: 1.6; color: var(--ink-2); }
+.mk-lede strong { color: var(--ink); }
+.mk-cta-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.mk-cta-row .btn-primary, .mk-cta-row .btn-secondary { padding: 12px 22px; font-size: 15px; border-radius: 12px; }
+
+.mk-preview {
+  max-width: 720px;
+  margin: 58px auto 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 14px;
+  box-shadow: var(--shadow-md), 0 50px 130px -50px rgba(158, 110, 229, 0.55);
+}
+.mk-preview-bar { display: flex; gap: 7px; padding: 6px 8px 14px; }
+.mk-preview-bar span { width: 11px; height: 11px; border-radius: 50%; background: rgba(255, 255, 255, 0.16); }
+
+.mk-section { padding: 66px 0; border-top: 1px solid var(--line); }
+.mk-h2 { font-size: clamp(26px, 4vw, 36px); letter-spacing: -0.6px; text-align: center; margin: 0 0 8px; font-weight: 700; color: var(--ink); }
+.mk-grad { background-image: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.mk-sub { text-align: center; color: var(--muted); margin: 0 0 36px; }
+
+.mk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 36px; }
+.mk-feature { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 24px; }
+.mk-feature h3 { font-size: 17px; margin: 0 0 9px; color: var(--ink); letter-spacing: -0.2px; }
+.mk-feature p { margin: 0; color: var(--ink-2); font-size: 14.5px; line-height: 1.62; }
+
+.mk-steps { list-style: none; padding: 0; margin: 36px auto 0; max-width: 660px; display: flex; flex-direction: column; gap: 9px; }
+.mk-step { display: flex; gap: 16px; align-items: flex-start; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 16px 18px; }
+.mk-step-n { flex: none; width: 30px; height: 30px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; background-image: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+.mk-step h4 { margin: 0 0 3px; font-size: 15px; color: var(--ink); letter-spacing: -0.1px; }
+.mk-step p { margin: 0; color: var(--ink-2); font-size: 14px; line-height: 1.55; }
+
+.mk-pricing { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; max-width: 720px; margin: 0 auto; }
+.mk-price { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 26px; }
+.mk-price-featured { border-color: rgba(158, 110, 229, 0.5); box-shadow: 0 0 0 1px rgba(158, 110, 229, 0.25), 0 36px 90px -46px rgba(158, 110, 229, 0.65); }
+.mk-price-badge { position: absolute; top: -11px; left: 26px; font-size: 11px; font-weight: 700; letter-spacing: 0.4px; color: #fff; background-image: linear-gradient(90deg, var(--accent), var(--accent-2)); padding: 4px 11px; border-radius: 999px; }
+.mk-price-name { font-size: 14px; font-weight: 600; color: var(--muted); }
+.mk-price-amt { font-size: 40px; font-weight: 800; letter-spacing: -1px; color: var(--ink); margin: 4px 0 2px; }
+.mk-price-amt span { font-size: 16px; font-weight: 600; color: var(--muted); }
+.mk-price-note { font-size: 13px; color: var(--muted); margin-bottom: 18px; }
+.mk-price-list { list-style: none; padding: 0; margin: 0 0 22px; display: flex; flex-direction: column; gap: 9px; }
+.mk-price-list li { color: var(--ink-2); font-size: 14px; padding-left: 24px; position: relative; }
+.mk-price-list li::before { content: "✓"; position: absolute; left: 0; color: var(--accent-ink); font-weight: 700; }
+.mk-price-btn { width: 100%; justify-content: center; }
+
+.mk-band {
+  text-align: center;
+  padding: 76px 24px;
+  margin-top: 66px;
+  border-radius: 24px;
+  background: radial-gradient(120% 150% at 50% 0%, rgba(158, 110, 229, 0.3), rgba(8, 8, 10, 0) 60%);
+  border: 1px solid var(--line);
+}
+.mk-band-h { font-size: clamp(28px, 5vw, 44px); letter-spacing: -0.8px; margin: 0 0 22px; font-weight: 800; background-image: radial-gradient(70% 80% at 50% 40%, #ffffff, rgba(255, 255, 255, 0.6)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.mk-band-btn { padding: 13px 26px; font-size: 16px; border-radius: 12px; }
+
+.mk-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 40px 0 0; margin-top: 48px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+.mk-foot-note { color: var(--muted); font-size: 12.5px; }

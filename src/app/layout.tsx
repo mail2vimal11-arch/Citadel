@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Nav from "@/components/Nav";
 
 export const metadata: Metadata = {
   title: "Citadel — your sovereign inbox",
   description:
-    "Citadel — a privacy-first email assistant concept prototype. Synthetic data only.",
+    "Citadel — privacy-first email that runs AI on infrastructure you control, and forgets on a schedule you can prove.",
 };
 
 export default function RootLayout({
@@ -15,10 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
-        <Nav />
-        <main className="container">{children}</main>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
