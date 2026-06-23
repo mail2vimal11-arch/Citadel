@@ -1,6 +1,6 @@
 import type { AIProvider, TriageResult } from "./AIProvider";
 import type { Priority, RawEmail } from "@/lib/types";
-import type { ComposeRequest, Tone } from "./prompts";
+import type { AskContext, ComposeRequest, Tone } from "./prompts";
 
 // ============================================================================
 // LocalHeuristicProvider — the PLACEHOLDER "AI" used in the prototype.
@@ -118,6 +118,21 @@ export class LocalHeuristicProvider implements AIProvider {
     const greeting = req.context?.from ? `Hi ${firstName(req.context.from)},` : "Hello,";
     const body = instruction.charAt(0).toUpperCase() + instruction.slice(1);
     return wrapTone(req.tone, greeting, body);
+  }
+
+  // Ask AI, offline. It can't reason, so it honestly surfaces the most relevant
+  // retrieved emails rather than fabricate an answer. Real Q&A is the Apertus path.
+  async answer(question: string, contexts: AskContext[]): Promise<string> {
+    if (!question.trim()) return "";
+    if (contexts.length === 0) {
+      return "I couldn't find anything in your inbox related to that.";
+    }
+    const top = contexts.slice(0, 2).map((c, i) => `${i + 1}. “${c.subject ?? "?"}” — ${c.summary ?? ""}`.trim());
+    return (
+      `Based on ${contexts.length} related email(s), the most relevant:\n` +
+      top.join("\n") +
+      `\n\n(Offline mode surfaces matches rather than a reasoned answer — enable local Apertus for full Q&A.)`
+    );
   }
 }
 

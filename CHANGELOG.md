@@ -7,6 +7,16 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **P8 — Ask AI / Q&A over your inbox (BUILD_PLAN):** ask a natural-language
+  question and get an answer **grounded in your own mail**, fully local. `POST
+  /api/ask` does RAG: retrieval reuses the in-memory semantic search (keyword
+  fallback) to pull the most relevant ACTIVE items, then the local model answers
+  using ONLY those items' derived fields (from/subject/summary) and admits when
+  the answer isn't there — no hallucinated facts, no raw bodies, nothing
+  persisted. Forgotten items are swept first so they're never used as context.
+  An "Ask AI" box in the inbox shows the answer with clickable source emails. The
+  Ask prompt is a pure tested builder; the offline provider answers too (surfaces
+  matches) so it works with no Ollama. 5 new tests (97 total green).
 - **P6 — Split Inbox / auto-triage lanes (BUILD_PLAN):** the inbox can group into
   lanes instead of one flat list — **VIP / Important / Newsletters & notices /
   Everything else / Forgotten** — routed by priority, triage label, and a

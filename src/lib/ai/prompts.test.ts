@@ -8,6 +8,7 @@ import {
   emailToText,
   buildDraftMessages,
   buildComposeMessages,
+  buildAskMessages,
   SYSTEM_BASE,
 } from "./prompts";
 import type { RawEmail } from "@/lib/types";
@@ -84,5 +85,21 @@ describe("buildComposeMessages", () => {
   it("defaults the tone when none is given", () => {
     const msgs = buildComposeMessages({ instruction: "Hi" });
     expect(msgs[0].content).toContain(toneDirective(DEFAULT_TONE));
+  });
+});
+
+describe("buildAskMessages", () => {
+  it("instructs grounding and lists the contexts with the question", () => {
+    const msgs = buildAskMessages("What is due Friday?", [
+      { from: "Court <clerk@court.gov>", subject: "Filing", summary: "Confirm filing by Friday." },
+    ]);
+    expect(msgs[0].content).toBe(SYSTEM_BASE);
+    expect(msgs[1].content).toContain("ONLY the emails");
+    expect(msgs[1].content).toContain("What is due Friday?");
+    expect(msgs[1].content).toContain("Subject: Filing");
+  });
+  it("notes when no relevant emails were found", () => {
+    const msgs = buildAskMessages("anything?", []);
+    expect(msgs[1].content).toContain("none found relevant");
   });
 });

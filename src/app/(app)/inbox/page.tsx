@@ -391,6 +391,10 @@ export default function InboxPage() {
         />
       )}
 
+      {activeCount > 0 && (
+        <AskBox onPick={(id) => select(id, split ? undefined : visible.findIndex((i) => i.id === id))} />
+      )}
+
       {loading ? (
         <p className="empty">Loading…</p>
       ) : items.length === 0 ? (
@@ -527,6 +531,64 @@ export default function InboxPage() {
               <ReadingForgotten item={selected} />
             )}
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Ask AI — a question over the inbox, answered locally and grounded in the most
+// relevant items (RAG). Clicking a source opens that message.
+function AskBox({ onPick }: { onPick: (id: string) => void }) {
+  const [q, setQ] = useState("");
+  const [result, setResult] = useState<{
+    answer: string;
+    sources: { id: string; subject: string; from: string }[];
+    aiProvider: string;
+  } | null>(null);
+  const [asking, setAsking] = useState(false);
+
+  const run = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!q.trim()) return;
+    setAsking(true);
+    setResult(null);
+    const res = await fetch("/api/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question: q }),
+    });
+    setResult(await res.json());
+    setAsking(false);
+  };
+
+  return (
+    <div className="card">
+      <form onSubmit={run} className="toolbar" style={{ marginBottom: result ? 12 : 0 }}>
+        <input
+          className="search-input"
+          placeholder="Ask your inbox — e.g. “What deadlines do I have this week?”"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
+        <button className="btn-secondary btn-small" type="submit" disabled={asking}>
+          {asking ? "Thinking…" : "Ask AI"}
+        </button>
+        <span className="note" style={{ margin: 0 }}>answers run locally</span>
+      </form>
+      {result && (
+        <div>
+          <div className="ask-answer">{result.answer}</div>
+          {result.sources.length > 0 && (
+            <div className="ask-sources">
+              <span className="note" style={{ margin: 0 }}>Sources:</span>{" "}
+              {result.sources.map((s) => (
+                <button key={s.id} className="badge label ask-source" onClick={() => onPick(s.id)}>
+                  {s.subject || s.from}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

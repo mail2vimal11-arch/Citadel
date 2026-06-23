@@ -109,8 +109,12 @@ content-free `DRAFTED` audit event, all over a pure tested prompt module
 (`src/lib/ai/prompts.ts`). **P6 (Split Inbox)** is done: pure lane routing
 (`src/lib/lanes.ts`) into VIP/Important/Newsletters/Other/Forgotten by
 priority/label + a client-side VIP sender list, with a Split toggle + VIP editor
-in the inbox. Next options: **P8 (Ask AI)** then **P12 (billing & freemium
-gating)**. See also `CHANGELOG.md`, `ROADMAP.md`, and `OPEN_BUGS.md`.
+in the inbox. **P8 (Ask AI)** is done: `POST /api/ask` does local RAG (retrieval
+via `searchInbox`, grounded `answer()` over derived fields only, sources
+returned), with an "Ask AI" box in the inbox. Next on the fast path is **P12
+(billing & freemium gating)** — though per ROADMAP, charging should wait until
+the Canadian-hosting + managed-KMS production gates are real. See also
+`CHANGELOG.md`, `ROADMAP.md`, and `OPEN_BUGS.md`.
 
 ## Gotchas (learned the hard way)
 - Apertus needs its **chat template** applied or it rambles (math) / replies in

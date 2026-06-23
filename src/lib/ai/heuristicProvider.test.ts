@@ -34,6 +34,23 @@ describe("LocalHeuristicProvider — compose (offline fallback)", () => {
   });
 });
 
+describe("LocalHeuristicProvider — answer (offline Ask AI fallback)", () => {
+  it("surfaces the most relevant retrieved emails", async () => {
+    const a = await ai.answer("what's due?", [
+      { from: "Court", subject: "Filing deadline", summary: "Due Friday." },
+      { from: "Dana", subject: "Lunch", summary: "Catch up." },
+    ]);
+    expect(a).toContain("Filing deadline");
+    expect(a).toContain("2 related email");
+  });
+  it("says so when nothing is relevant", async () => {
+    expect(await ai.answer("anything?", [])).toMatch(/couldn't find/i);
+  });
+  it("returns empty for an empty question", async () => {
+    expect(await ai.answer("  ", [{ subject: "x" }])).toBe("");
+  });
+});
+
 describe("LocalHeuristicProvider — tone-aware closings", () => {
   it("uses a formal closing for the formal tone", async () => {
     expect(await ai.draftReply(email, { tone: "formal" })).toContain("Yours sincerely,");

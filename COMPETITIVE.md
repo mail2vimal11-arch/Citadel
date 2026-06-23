@@ -44,7 +44,7 @@ rewrites, a separate grammar engine is redundant._
 | AI runs **locally / on infra you control** | — | 🆚 | Apertus via Ollama; no US cloud |
 | Write with AI (draft from a prompt) | Starter | ✅ | `/api/compose` + reading-pane box, local model |
 | Auto Drafts (proactive replies in your tone) | Business | ✅ | tone-aware auto-draft on every processed email 🆚 (local) |
-| Ask AI (Q&A over inbox) | Business | 🔜 | P8 (RAG over derived data) |
+| Ask AI (Q&A over inbox) | Business | ✅ | RAG over derived data, grounded + cited, fully local (P8) 🆚 |
 | Auto Summarize / TLDR | Starter | ✅ | one-line summaries today |
 | Tone & Voice / self-personalization | Starter | ✅ | per-user tone profile folded into every prompt (local) |
 | Semantic search | Starter | ✅ | in-memory embeddings, never persisted 🆚 |

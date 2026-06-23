@@ -308,6 +308,11 @@ button:disabled { opacity: 0.45; cursor: default; }
 }
 .search-input::placeholder { color: rgba(255, 255, 255, 0.4); }
 .search-input:focus { outline: none; border-color: var(--accent); box-shadow: var(--ring); }
+.ask-answer { white-space: pre-wrap; line-height: 1.6; color: var(--ink-2); font-size: 14px; }
+.ask-sources { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-top: 12px; }
+.ask-source { cursor: pointer; border: 1px solid var(--line-2); }
+.ask-source:hover { background: var(--accent-soft); color: var(--accent-ink); border-color: rgba(158, 110, 229, 0.4); }
+
 .search-hit { padding: 9px 2px; border-top: 1px solid var(--line); font-size: 14px; }
 .search-hit:first-of-type { border-top: none; }
 .search-hit-btn { display: block; width: 100%; text-align: left; background: none; border: none; border-top: 1px solid var(--line); border-radius: 0; padding: 9px 2px; }

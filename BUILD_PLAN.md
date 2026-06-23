@@ -162,12 +162,20 @@ T-shirt size (S/M/L). "Gate" phases unblock revenue and should not be skipped.
 - **Docs:** ARCHITECTURE (AI prompts/tone + compose), COMPETITIVE, CHANGELOG,
   CLAUDE. Done.
 
-### P8 · Ask AI (Q&A over your inbox)  · M
+### P8 · Ask AI (Q&A over your inbox)  · M · ✅ DONE (2026-06-23)
 - **Goal:** "what did Jordan say about the deadline?"
-- **Build:** retrieval over the in-memory embeddings + derived data, answered
-  locally by Apertus. Nothing persisted beyond existing encrypted items.
-- **Test:** retrieval ranking tests; answer-grounding guardrail test.
-- **Docs:** ARCHITECTURE, COMPETITIVE, CHANGELOG.
+- **Built:** `POST /api/ask` — RAG over the inbox. Retrieval reuses the local
+  semantic search (`searchInbox`, in-memory, keyword fallback); the model
+  `answer()`s grounded ONLY in the retrieved items' derived fields and admits
+  when the answer isn't present. Forgotten items swept first (never context);
+  nothing persisted. An "Ask AI" box in the inbox shows the answer + clickable
+  sources. Pure Ask-prompt builder in `prompts.ts`; heuristic provider answers
+  offline (surfaces matches) so it works with no Ollama.
+- **Tested:** Ask-prompt assembly (grounding instruction, contexts, empty case)
+  + heuristic-answer guardrails (surfaces matches, "couldn't find" on none,
+  empty question → ""). 97 green; `tsc` + `next build` clean; runtime smoke
+  (process → ask returns a grounded answer + sources; empty → 400).
+- **Docs:** ARCHITECTURE (Ask AI / RAG), COMPETITIVE, CHANGELOG, CLAUDE. Done.
 
 ---
 

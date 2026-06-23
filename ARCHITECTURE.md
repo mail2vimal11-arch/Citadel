@@ -38,9 +38,9 @@ infrastructure — no API keys or cloud endpoints exist anywhere in the app.
   configured, redirects unauthenticated visitors to `/signin`). The route group
   keeps the app chrome off the landing without changing URLs.
 - `/api/...` — server routes (process, items, forget, settings, audit, reset,
-  search, compose, `auth/{google,microsoft}[/callback|/status]` for the Gmail /
-  Microsoft 365 OAuth flows, and `auth/[...nextauth]` for the Auth.js session
-  handlers). Each data route
+  search, compose, ask, `auth/{google,microsoft}[/callback|/status]` for the
+  Gmail / Microsoft 365 OAuth flows, and `auth/[...nextauth]` for the Auth.js
+  session handlers). Each data route
   resolves the caller with `requireUserId()` (`src/lib/apiUser.ts`) and scopes
   every query to that user; it returns 401 when auth is on and there's no session.
 - `EMAIL_SOURCE` (`auto|sample|gmail|microsoft`) and `APP_BASE_URL` (public origin, for
@@ -86,7 +86,8 @@ sign-in routes mirror each other: `src/app/api/auth/{google,microsoft}` (start),
 per-user tokens in a Canadian-controlled secrets manager — never a file or the DB.
 
 ### 2. `AIProvider` — `src/lib/ai/AIProvider.ts`
-`summarize()`, `triage()`, `draftReply(email, {tone})`, `compose(req)`. Selected
+`summarize()`, `triage()`, `draftReply(email, {tone})`, `compose(req)`,
+`answer(question, contexts)`. Selected
 in `src/lib/ai/index.ts` via the `AI_PROVIDER` env var (`auto` | `apertus` |
 `heuristic`). Prompt wording and the **per-user tone profile** live in a pure,
 unit-tested module, `src/lib/ai/prompts.ts` (`SYSTEM_BASE`, `TONES`,
@@ -100,6 +101,14 @@ body, since none is stored). It persists nothing and writes a content-free
 `DRAFTED` audit entry. The pipeline's auto-draft (`draftReply`) uses the same
 tone. Tone is stored on the `Setting` row (`getTone`/`setTone`) and chosen in
 Settings.
+
+**Ask AI (P8).** `POST /api/ask { question }` is RAG over the inbox: retrieval
+reuses the local semantic search (`searchInbox`, in-memory, keyword fallback) to
+pull the most relevant ACTIVE items, then `answer()` has the local model respond
+**grounded only in those items' derived fields** (from/subject/summary) and admit
+when the answer isn't there. Forgotten items are swept first, so they're never
+context. Nothing is persisted; the response returns the answer plus clickable
+source items.
 
 | Implementation | File | Status |
 |---|---|---|

@@ -7,6 +7,8 @@ import {
   emailToText,
   buildDraftMessages,
   buildComposeMessages,
+  buildAskMessages,
+  type AskContext,
   type ComposeRequest,
   type Tone,
 } from "./prompts";
@@ -114,6 +116,17 @@ export class ApertusLocalProvider implements AIProvider {
       return content.trim() || (await this.fallback.compose(req));
     } catch {
       return this.fallback.compose(req);
+    }
+  }
+
+  async answer(question: string, contexts: AskContext[]): Promise<string> {
+    if (!question.trim()) return "";
+    try {
+      // Low temperature: we want grounded answers, not creativity.
+      const content = await ollamaChat(buildAskMessages(question, contexts), { temperature: 0.1 });
+      return content.trim() || (await this.fallback.answer(question, contexts));
+    } catch {
+      return this.fallback.answer(question, contexts);
     }
   }
 }

@@ -100,3 +100,34 @@ export function buildComposeMessages(req: ComposeRequest): ChatMessage[] {
     { role: "user", content: lines.join("\n") },
   ];
 }
+
+// ---- Ask AI: answer a question grounded in retrieved inbox items (P8) --------
+// Contexts are the NON-sensitive derived fields of the most relevant items
+// (from/subject/summary) — never a raw body. The model must answer ONLY from
+// them and admit when the answer isn't there (no hallucinated facts).
+export type AskContext = { from?: string; subject?: string; summary?: string };
+
+export function buildAskMessages(question: string, contexts: AskContext[]): ChatMessage[] {
+  const lines: string[] = [
+    "Answer the user's question using ONLY the emails listed below. If they do not " +
+      "contain the answer, say you don't have that information — do NOT guess or invent " +
+      "details. Be concise (2–4 sentences). When you rely on an email, mention its subject.",
+    "",
+    `Question: ${question.trim()}`,
+    "",
+    "Emails:",
+  ];
+  if (contexts.length === 0) {
+    lines.push("(none found relevant to this question)");
+  } else {
+    contexts.forEach((c, i) => {
+      lines.push(
+        `[${i + 1}] From: ${c.from ?? "?"} | Subject: ${c.subject ?? "?"} | Summary: ${c.summary ?? ""}`
+      );
+    });
+  }
+  return [
+    { role: "system", content: SYSTEM_BASE },
+    { role: "user", content: lines.join("\n") },
+  ];
+}

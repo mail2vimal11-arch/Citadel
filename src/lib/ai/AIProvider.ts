@@ -1,5 +1,5 @@
 import type { Priority, RawEmail } from "@/lib/types";
-import type { ComposeRequest, Tone } from "./prompts";
+import type { AskContext, ComposeRequest, Tone } from "./prompts";
 
 export interface TriageResult {
   priority: Priority;
@@ -22,4 +22,6 @@ export interface AIProvider {
   // Write-with-AI: compose a draft from a freeform instruction (+ optional
   // reply context and tone). Returns the email text only.
   compose(req: ComposeRequest): Promise<string>;
+  // Ask AI: answer a question grounded ONLY in the retrieved inbox contexts.
+  answer(question: string, contexts: AskContext[]): Promise<string>;
 }
