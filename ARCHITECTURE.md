@@ -66,19 +66,23 @@ infrastructure — no API keys or cloud endpoints exist anywhere in the app.
 ### 1. `EmailSource` — `src/lib/email/EmailSource.ts`
 `listEmails(): Promise<RawEmail[]>` — read-only fetch of messages. The mailbox is
 chosen in one place, `src/lib/email/index.ts` (`getEmailSource()`), via the
-`EMAIL_SOURCE` env var (`auto` | `sample` | `gmail`).
+`EMAIL_SOURCE` env var (`auto` | `sample` | `gmail` | `microsoft`). In `auto`,
+a connected account wins (Gmail, then Microsoft), else the synthetic source.
 
 | Implementation | File | Status |
 |---|---|---|
 | `SampleDataSource` | `src/lib/email/SampleDataSource.ts` | ✅ used in demo (synthetic) |
 | `GmailSource` | `src/lib/email/GmailSource.ts` | ✅ real — read-only Gmail API (`gmail.readonly`) via OAuth 2.0; bodies in memory only |
-| `MicrosoftGraphSource` | `src/lib/email/MicrosoftGraphSource.ts` | 🚧 stub — `TODO(production)` (next; must cover Azure AD + personal accounts via `/common`) |
+| `MicrosoftGraphSource` | `src/lib/email/MicrosoftGraphSource.ts` | ✅ real — read-only Microsoft Graph (`Mail.Read`) via OAuth 2.0 on the `/common` authority (work/school + personal Outlook); bodies in memory only |
 
-OAuth + token storage for Gmail live in `src/lib/email/googleAuth.ts` (the consent
-URL, code/refresh exchange, and a local **gitignored** token file). The sign-in
-routes are `src/app/api/auth/google` (start), `.../callback`, and `.../status`
-(connect-state + disconnect). `TODO(production)`: per-user tokens in a
-Canadian-controlled secrets manager — never a file or the app DB.
+Each connector keeps OAuth + token storage in its own module — Gmail in
+`src/lib/email/googleAuth.ts`, Microsoft in `src/lib/email/microsoftAuth.ts` —
+holding the consent URL, code/refresh exchange, and a per-user **gitignored**
+token file (`.citadel-secrets/{google,microsoft}-<userId>.json`). Provider
+payload parsing is pure and unit-tested (`gmailParse.ts`, `graphParse.ts`). The
+sign-in routes mirror each other: `src/app/api/auth/{google,microsoft}` (start),
+`.../callback`, and `.../status` (connect-state + disconnect). `TODO(production)`:
+per-user tokens in a Canadian-controlled secrets manager — never a file or the DB.
 
 ### 2. `AIProvider` — `src/lib/ai/AIProvider.ts`
 `summarize()`, `triage()`, `draftReply()`. Selected in `src/lib/ai/index.ts`

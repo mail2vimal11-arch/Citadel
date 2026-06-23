@@ -39,8 +39,9 @@ npx next build                     # full build (set AI_PROVIDER=heuristic if no
 ## Architecture (the swappable seams)
 All app code talks to interfaces, never concrete impls. Selectors are the only
 lines to change for production.
-- `src/lib/email/EmailSource.ts` → `SampleDataSource` (live) · `GmailSource` /
-  `MicrosoftGraphSource` (stubs).
+- `src/lib/email/EmailSource.ts` → `SampleDataSource` (synthetic) · `GmailSource`
+  (read-only Gmail) · `MicrosoftGraphSource` (read-only Microsoft 365). Picked in
+  `src/lib/email/index.ts` via `EMAIL_SOURCE` (`auto`|`sample`|`gmail`|`microsoft`).
 - `src/lib/ai/AIProvider.ts` → `ApertusLocalProvider` (Ollama) · `LocalHeuristicProvider`
   (offline fallback). Selected in `src/lib/ai/index.ts` via `AI_PROVIDER`
   (`auto`|`apertus`|`heuristic`). All model traffic goes through
@@ -97,8 +98,12 @@ service + migration smoke test). **Stage A (Foundation: P0–P3) is complete.**
 **P4 (inbox reading UX)** is also done: a two-pane reader (message list +
 reading pane) with keyboard nav (`j`/`k`/`e`/`f`/`/`), a client-only "done"
 declutter, and pagination, all over a pure tested view-model
-(`src/lib/inboxView.ts`). Next on the fast path is **P5 (Microsoft 365)**. See
-also `CHANGELOG.md`, `ROADMAP.md`, and `OPEN_BUGS.md`.
+(`src/lib/inboxView.ts`). **P5 (Microsoft 365)** is done too: a read-only
+`MicrosoftGraphSource` (`Mail.Read` via Microsoft Graph, OAuth on `/common` for
+work + personal accounts, per-user gitignored tokens, pure tested `graphParse`),
+with Connect/Disconnect Microsoft in the inbox and a `microsoft`/`m365`
+`EMAIL_SOURCE` option. Next on the fast path is **P7 (Write-with-AI / drafts)**.
+See also `CHANGELOG.md`, `ROADMAP.md`, and `OPEN_BUGS.md`.
 
 ## Gotchas (learned the hard way)
 - Apertus needs its **chat template** applied or it rambles (math) / replies in

@@ -115,13 +115,19 @@ T-shirt size (S/M/L). "Gate" phases unblock revenue and should not be skipped.
   runtime smoke (process 15 → list renders, `/inbox` 200).
 - **Docs:** README (demo script), BUILD_PLAN, CHANGELOG, CLAUDE. Done.
 
-### P5 · Microsoft 365 ingestion  · L
+### P5 · Microsoft 365 ingestion  · L · ✅ DONE (2026-06-23)
 - **Goal:** the second mailbox (corporate + personal Outlook).
-- **Build:** `MicrosoftGraphSource` (read-only `Mail.Read`) via the `/common`
-  authority; reuse the `EmailSource` seam + OAuth pattern.
-- **Test:** Graph payload → `RawEmail` mapping tests; selector tests.
+- **Built:** `MicrosoftGraphSource` (read-only `Mail.Read` via Microsoft Graph)
+  + `microsoftAuth.ts` (OAuth on the `/common` authority for work/school +
+  personal accounts; per-user gitignored, rotation-aware refresh tokens) +
+  `/api/auth/microsoft/{start,callback,status}`, all mirroring the Gmail seam.
+  Selector gained `microsoft`/`m365`; the inbox has Connect/Disconnect Microsoft
+  and a provider-aware connected banner. Bodies stay in memory only.
+- **Tested:** pure Graph→RawEmail mapping (`graphParse.ts`) — addresses, HTML
+  strip, fallbacks, id namespacing, length cap — plus selector cases. 65 green.
+  `tsc` + `next build` clean (the three Microsoft routes register).
 - **Docs:** ARCHITECTURE (EmailSource status), README (connect M365),
-  COMPETITIVE, CHANGELOG.
+  COMPETITIVE, CHANGELOG, CLAUDE. Done.
 
 ### P6 · Split Inbox / auto-triage lanes  · M
 - **Goal:** organize by VIP / tool / rule, not one flat list.

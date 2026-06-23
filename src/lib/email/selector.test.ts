@@ -17,4 +17,14 @@ describe("getEmailSource selector", () => {
     process.env.EMAIL_SOURCE = "gmail";
     expect((await getEmailSource("u1")).name).toMatch(/gmail/i);
   });
+
+  it("returns the Microsoft Graph source for EMAIL_SOURCE=microsoft", async () => {
+    process.env.EMAIL_SOURCE = "microsoft";
+    expect((await getEmailSource("u1")).name).toMatch(/microsoft|graph/i);
+  });
+
+  it("accepts the m365 alias", async () => {
+    process.env.EMAIL_SOURCE = "m365";
+    expect((await getEmailSource("u1")).name).toMatch(/microsoft|graph/i);
+  });
 });

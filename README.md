@@ -209,8 +209,38 @@ test app — that's expected; continue), and you'll land back on the inbox now
 reading your real mail. **"Disconnect Gmail"** deletes the stored token and returns
 to synthetic data.
 
-Tuning (optional, in `.env`): `EMAIL_SOURCE` (`auto` | `sample` | `gmail`) and
-`GMAIL_MAX_MESSAGES` (how many recent messages to pull).
+Tuning (optional, in `.env`): `EMAIL_SOURCE` (`auto` | `sample` | `gmail` |
+`microsoft`) and `GMAIL_MAX_MESSAGES` (how many recent messages to pull).
+
+---
+
+## Connect Microsoft 365 / Outlook (optional — read-only)
+
+Citadel reads Microsoft mail the same way: read-only, via **Microsoft Graph**
+(`Mail.Read`), bodies in memory only. It works for both **Microsoft 365**
+(work/school) and **personal Outlook.com** accounts (the OAuth flow uses the
+`/common` authority).
+
+1. In the **[Microsoft Entra admin center](https://entra.microsoft.com)** →
+   **App registrations → New registration**.
+2. **Supported account types:** "Accounts in any organizational directory **and**
+   personal Microsoft accounts."
+3. **Redirect URI (Web):** `http://localhost:3000/api/auth/microsoft/callback`.
+4. **Certificates & secrets → New client secret** — copy the value.
+5. **API permissions → Add → Microsoft Graph → Delegated →** add `Mail.Read`
+   (and `offline_access`, `User.Read`). No admin consent needed for personal use.
+
+**Tell Citadel about it** in `.env.local` (gitignored):
+
+```
+MICROSOFT_CLIENT_ID="..."
+MICROSOFT_CLIENT_SECRET="..."
+```
+
+Restart the app, click **"Connect Microsoft"** in the inbox toolbar, approve the
+consent, and you'll land back reading your real mail. **"Disconnect Microsoft"**
+deletes the stored token. (If both Gmail and Microsoft are connected, `auto`
+prefers Gmail — force one with `EMAIL_SOURCE=microsoft`.)
 
 ---
 

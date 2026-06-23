@@ -45,6 +45,10 @@ export default function InboxPage() {
     configured: false,
     connected: false,
   });
+  const [m365, setM365] = useState<{ configured: boolean; connected: boolean; email?: string }>({
+    configured: false,
+    connected: false,
+  });
 
   // Reading UX state.
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -60,6 +64,11 @@ export default function InboxPage() {
     setGmail(await res.json());
   }, []);
 
+  const loadM365 = useCallback(async () => {
+    const res = await fetch("/api/auth/microsoft/status", { cache: "no-store" });
+    setM365(await res.json());
+  }, []);
+
   const load = useCallback(async () => {
     const res = await fetch("/api/items", { cache: "no-store" });
     const data = await res.json();
@@ -71,7 +80,8 @@ export default function InboxPage() {
   useEffect(() => {
     load();
     loadGmail();
-  }, [load, loadGmail]);
+    loadM365();
+  }, [load, loadGmail, loadM365]);
 
   // Restore the client-only "done" set (declutter is a local view, never sent
   // to the server — it does not delete or forget anything).
@@ -92,15 +102,17 @@ export default function InboxPage() {
     }
   };
 
-  // Show a message after returning from the Google OAuth redirect, then clean
-  // the ?gmail=... param out of the URL.
+  // Show a message after returning from a mailbox OAuth redirect (Google sets
+  // ?gmail=, Microsoft sets ?m365=), then clean the param out of the URL.
   useEffect(() => {
-    const status = new URLSearchParams(window.location.search).get("gmail");
-    if (!status) return;
+    const params = new URLSearchParams(window.location.search);
+    const provider = params.get("gmail") ? "Gmail" : params.get("m365") ? "Microsoft 365" : null;
+    const status = params.get("gmail") ?? params.get("m365");
+    if (!provider || !status) return;
     const messages: Record<string, { kind: "ok" | "info"; text: string }> = {
-      connected: { kind: "ok", text: "Gmail connected. “Process inbox” now reads your real mail (read-only)." },
-      denied: { kind: "info", text: "Gmail connection cancelled — still using synthetic demo data." },
-      error: { kind: "info", text: "Couldn’t connect Gmail. Check your Google setup and try again." },
+      connected: { kind: "ok", text: `${provider} connected. “Process inbox” now reads your real mail (read-only).` },
+      denied: { kind: "info", text: `${provider} connection cancelled — still using synthetic demo data.` },
+      error: { kind: "info", text: `Couldn’t connect ${provider}. Check your setup and try again.` },
     };
     if (messages[status]) setFlash(messages[status]);
     window.history.replaceState({}, "", window.location.pathname);
@@ -179,6 +191,14 @@ export default function InboxPage() {
     setFlash({ kind: "info", text: "Gmail disconnected. Back to synthetic demo data." });
   };
 
+  const disconnectM365 = async () => {
+    setBusy(true);
+    await fetch("/api/auth/microsoft/status", { method: "DELETE" });
+    await loadM365();
+    setBusy(false);
+    setFlash({ kind: "info", text: "Microsoft 365 disconnected. Back to synthetic demo data." });
+  };
+
   const resetDemo = async () => {
     if (!confirm("Reset the demo? This wipes all derived items, keys, and audit events so you can start over.")) return;
     setBusy(true);
@@ -248,11 +268,14 @@ export default function InboxPage() {
   }, [select, load, markDone]); // handlers are stable; state is read via ref
 
   // ---- Render --------------------------------------------------------------
+  const liveMailbox = gmail.connected ? "Gmail" : m365.connected ? "Microsoft 365" : null;
+  const liveEmail = gmail.connected ? gmail.email : m365.email;
+
   return (
     <div>
-      {gmail.connected ? (
+      {liveMailbox ? (
         <div className="banner warn">
-          <strong>Connected to a real Gmail ({gmail.email ?? "your account"}) — read-only.</strong>{" "}
+          <strong>Connected to a real {liveMailbox} ({liveEmail ?? "your account"}) — read-only.</strong>{" "}
           Message bodies are processed <strong>in memory only</strong> and never stored; only the
           encrypted AI-derived summary/triage/draft is kept. The AI still runs{" "}
           <strong>100% locally</strong>. ⚠️ Encryption keys here are <strong>demo-grade</strong> —
@@ -301,6 +324,16 @@ export default function InboxPage() {
               Connect Gmail
             </a>
           ))}
+        {m365.configured &&
+          (m365.connected ? (
+            <button className="btn-secondary" onClick={disconnectM365} disabled={busy}>
+              Disconnect Microsoft
+            </button>
+          ) : (
+            <a className="btn-secondary" href="/api/auth/microsoft">
+              Connect Microsoft
+            </a>
+          ))}
         <span className="note">
           {activeCount} active · {forgottenCount} forgotten{doneCount > 0 ? ` · ${doneCount} done` : ""}
         </span>
@@ -315,7 +348,7 @@ export default function InboxPage() {
       ) : items.length === 0 ? (
         <div className="empty">
           No items yet. Click <strong>“Process inbox”</strong> to run the AI over{" "}
-          {gmail.connected ? "your recent Gmail messages" : "the 15 synthetic sample emails"}.
+          {liveMailbox ? `your recent ${liveMailbox} messages` : "the 15 synthetic sample emails"}.
         </div>
       ) : (
         <div className="inbox-layout">

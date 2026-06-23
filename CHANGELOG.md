@@ -7,6 +7,19 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **P5 — Microsoft 365 ingestion (BUILD_PLAN):** the second real mailbox.
+  `MicrosoftGraphSource` reads recent inbox messages via **Microsoft Graph** with
+  the least-privilege **`Mail.Read`** scope, returning bodies to the pipeline in
+  memory only (never persisted) — exactly like the Gmail connector. OAuth runs on
+  the **`/common`** authority so both work/school (Microsoft 365) and personal
+  Outlook.com accounts can connect; per-user refresh tokens live in a gitignored
+  `.citadel-secrets/microsoft-<userId>.json` (rotation-aware). Added the start /
+  callback / status routes under `/api/auth/microsoft`, a **Connect / Disconnect
+  Microsoft** control in the inbox (the connected banner + empty state now name
+  whichever provider is live), and the `microsoft` (alias `m365`) option to
+  `EMAIL_SOURCE` (`auto` prefers a connected Gmail, then Microsoft, else demo).
+  Graph payload mapping is pure and unit-tested (`graphParse.ts`) — 12 new tests
+  plus selector cases; 65 total green.
 - **P4 — Inbox list & reading UX (BUILD_PLAN):** the inbox is now a real
   two-pane reader, not a flat process list. A compact **message list** (priority
   dot, sender, subject, summary snippet, received time, live forget countdown)

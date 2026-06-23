@@ -23,7 +23,7 @@ rewrites, a separate grammar engine is redundant._
 | Superhuman feature | Tier | Citadel | Notes |
 |---|---|---|---|
 | Works on Gmail | Starter | ✅ | Read-only Gmail API + OAuth shipped |
-| Works on Outlook / M365 (incl. personal) | Starter | 🔜 | `/common` connector — BUILD_PLAN P5 |
+| Works on Outlook / M365 (incl. personal) | Starter | ✅ | Read-only Microsoft Graph (`Mail.Read`) + OAuth on `/common` shipped |
 | Keyboard-first + 100+ shortcuts | Starter | 🔜 | P11 |
 | Cmd+K command palette | Starter | 🔜 | P11 |
 | Inbox Zero workflow | Starter | 🟡 | process/forget loop exists; needs list UX |
