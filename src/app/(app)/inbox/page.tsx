@@ -13,9 +13,12 @@ import {
   type ForgottenItem,
   type Priority,
 } from "@/lib/inboxView";
+import { groupIntoLanes, parseVips } from "@/lib/lanes";
 
 const PAGE_SIZE = 20;
 const DONE_KEY = "citadel:done";
+const VIP_KEY = "citadel:vips";
+const SPLIT_KEY = "citadel:split";
 
 const fmt = (iso: string) =>
   new Date(iso).toLocaleString(undefined, {
@@ -55,6 +58,10 @@ export default function InboxPage() {
   const [page, setPage] = useState(0);
   const [doneIds, setDoneIds] = useState<Set<string>>(new Set());
   const [showDone, setShowDone] = useState(false);
+  // Split Inbox (P6): group into lanes, with a client-side VIP sender list.
+  const [split, setSplit] = useState(true);
+  const [vipText, setVipText] = useState("");
+  const [editingVips, setEditingVips] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const readingRef = useRef<HTMLDivElement>(null);
 
@@ -102,6 +109,36 @@ export default function InboxPage() {
     }
   };
 
+  // Restore Split Inbox preferences (VIP list + split on/off). Client-only.
+  useEffect(() => {
+    try {
+      setVipText(localStorage.getItem(VIP_KEY) ?? "");
+      const s = localStorage.getItem(SPLIT_KEY);
+      if (s !== null) setSplit(s === "1");
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  const saveVips = (raw: string) => {
+    setVipText(raw);
+    try {
+      localStorage.setItem(VIP_KEY, raw);
+    } catch {
+      /* ignore */
+    }
+  };
+  const toggleSplit = () => {
+    setSplit((s) => {
+      const next = !s;
+      try {
+        localStorage.setItem(SPLIT_KEY, next ? "1" : "0");
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  };
+
   // Show a message after returning from a mailbox OAuth redirect (Google sets
   // ?gmail=, Microsoft sets ?m365=), then clean the param out of the URL.
   useEffect(() => {
@@ -122,8 +159,13 @@ export default function InboxPage() {
   const sorted = useMemo(() => sortItems(items), [items]);
   const visible = useMemo(() => applyDone(sorted, doneIds, showDone), [sorted, doneIds, showDone]);
   const paged = useMemo(() => paginate(visible, page, PAGE_SIZE), [visible, page]);
-  const selectedIndex = visible.findIndex((i) => i.id === selectedId);
-  const selected = selectedIndex >= 0 ? visible[selectedIndex] : null;
+  const vips = useMemo(() => parseVips(vipText), [vipText]);
+  // Split Inbox: group into lanes. `nav` is the order j/k and selection follow —
+  // the grouped order when split, the flat sorted order otherwise.
+  const laned = useMemo(() => (split ? groupIntoLanes(visible, vips) : null), [split, visible, vips]);
+  const nav = useMemo(() => (laned ? laned.flatMap((g) => g.items) : visible), [laned, visible]);
+  const selectedIndex = nav.findIndex((i) => i.id === selectedId);
+  const selected = selectedIndex >= 0 ? nav[selectedIndex] : null;
 
   const activeCount = items.filter((i) => i.status === "ACTIVE").length;
   const forgottenCount = items.length - activeCount;
@@ -225,8 +267,8 @@ export default function InboxPage() {
 
   // ---- Keyboard navigation -------------------------------------------------
   // Latest view state lives in a ref so a single listener always sees fresh data.
-  const stateRef = useRef({ visible, selectedIndex, busy });
-  stateRef.current = { visible, selectedIndex, busy };
+  const stateRef = useRef({ nav, selectedIndex, busy, split });
+  stateRef.current = { nav, selectedIndex, busy, split };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -239,14 +281,15 @@ export default function InboxPage() {
         return;
       }
       if (!action) return;
-      const { visible: vis, selectedIndex: si, busy: isBusy } = stateRef.current;
+      const { nav: vis, selectedIndex: si, busy: isBusy, split: isSplit } = stateRef.current;
 
       if (action === "next" || action === "prev") {
         e.preventDefault();
         if (vis.length === 0) return;
         const from = si < 0 ? (action === "next" ? -1 : 0) : si;
         const idx = moveIndex(from, action === "next" ? 1 : -1, vis.length);
-        select(vis[idx].id, idx);
+        // Page-jump only matters in the flat (paginated) view.
+        select(vis[idx].id, isSplit ? undefined : idx);
       } else if (action === "search") {
         e.preventDefault();
         searchRef.current?.focus();
@@ -341,7 +384,12 @@ export default function InboxPage() {
 
       {flash && <div className={`flash ${flash.kind}`}>{flash.text}</div>}
 
-      {activeCount > 0 && <SearchBox inputRef={searchRef} onPick={(id) => select(id, visible.findIndex((i) => i.id === id))} />}
+      {activeCount > 0 && (
+        <SearchBox
+          inputRef={searchRef}
+          onPick={(id) => select(id, split ? undefined : visible.findIndex((i) => i.id === id))}
+        />
+      )}
 
       {loading ? (
         <p className="empty">Loading…</p>
@@ -357,55 +405,80 @@ export default function InboxPage() {
             <div className="list-tools">
               <span className="note" style={{ margin: 0 }}>
                 {visible.length} message{visible.length === 1 ? "" : "s"}
-                {paged.pageCount > 1 ? ` · page ${paged.page + 1}/${paged.pageCount}` : ""}
+                {!split && paged.pageCount > 1 ? ` · page ${paged.page + 1}/${paged.pageCount}` : ""}
               </span>
-              {doneCount > 0 && (
-                <button className="btn-secondary btn-small" onClick={() => setShowDone((s) => !s)}>
-                  {showDone ? "Hide done" : `Show done (${doneCount})`}
+              <div className="toolbar" style={{ margin: 0, gap: 7 }}>
+                <button className="btn-secondary btn-small" onClick={() => setEditingVips((v) => !v)}>
+                  VIPs{vips.length ? ` (${vips.length})` : ""}
                 </button>
-              )}
+                <button className={`btn-secondary btn-small ${split ? "is-on" : ""}`} onClick={toggleSplit}>
+                  Split: {split ? "On" : "Off"}
+                </button>
+                {doneCount > 0 && (
+                  <button className="btn-secondary btn-small" onClick={() => setShowDone((s) => !s)}>
+                    {showDone ? "Hide done" : `Show done (${doneCount})`}
+                  </button>
+                )}
+              </div>
             </div>
 
-            <ul className="msg-list">
-              {paged.slice.map((item) => (
-                <li key={item.id}>
-                  <button
-                    className={`msg-row ${item.id === selectedId ? "selected" : ""} ${
-                      doneIds.has(item.id) ? "done" : ""
-                    }`}
-                    onClick={() => select(item.id)}
-                  >
-                    {item.status === "ACTIVE" ? (
-                      <>
-                        <span className={`msg-dot ${priorityClass(item.payload.priority)}`} aria-hidden />
-                        <span className="msg-main">
-                          <span className="msg-sender">{item.payload.from}</span>
-                          <span className="msg-subject">{item.payload.subject}</span>
-                          <span className="msg-snippet">{item.payload.summary}</span>
-                        </span>
-                        <span className="msg-side">
-                          <span className="msg-time">{fmt(item.payload.receivedAt)}</span>
-                          <span className="msg-count">{forgetCountdown(item.forgetAt)}</span>
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="msg-dot p-Low" aria-hidden />
-                        <span className="msg-main">
-                          <span className="msg-sender">🔒 Forgotten</span>
-                          <span className="msg-snippet">Content permanently destroyed.</span>
-                        </span>
-                        <span className="msg-side">
-                          <span className="msg-time">{fmt(item.forgottenAt)}</span>
-                        </span>
-                      </>
-                    )}
+            {editingVips && (
+              <div className="card" style={{ padding: 14, marginBottom: 12 }}>
+                <div className="reading-section-label">VIP senders</div>
+                <p className="note" style={{ margin: "4px 0 8px" }}>
+                  Comma- or line-separated name/email fragments. Matching senders get their own
+                  lane. Stored only in this browser.
+                </p>
+                <textarea
+                  className="compose-input"
+                  rows={2}
+                  placeholder="e.g. court@, @keyclient.com, Managing Partner"
+                  value={vipText}
+                  onChange={(e) => saveVips(e.target.value)}
+                />
+                <div className="toolbar" style={{ margin: "8px 0 0" }}>
+                  <button className="btn-secondary btn-small" onClick={() => setEditingVips(false)}>
+                    Done
                   </button>
-                </li>
-              ))}
-            </ul>
+                </div>
+              </div>
+            )}
 
-            {paged.pageCount > 1 && (
+            {split && laned ? (
+              laned.map((g) => (
+                <div key={g.lane.id} className="lane">
+                  <div className="lane-head">
+                    <span className="lane-name">{g.lane.name}</span>
+                    <span className="lane-count">{g.items.length}</span>
+                  </div>
+                  <ul className="msg-list">
+                    {g.items.map((item) => (
+                      <MsgRow
+                        key={item.id}
+                        item={item}
+                        selected={item.id === selectedId}
+                        done={doneIds.has(item.id)}
+                        onSelect={() => select(item.id)}
+                      />
+                    ))}
+                  </ul>
+                </div>
+              ))
+            ) : (
+              <ul className="msg-list">
+                {paged.slice.map((item) => (
+                  <MsgRow
+                    key={item.id}
+                    item={item}
+                    selected={item.id === selectedId}
+                    done={doneIds.has(item.id)}
+                    onSelect={() => select(item.id)}
+                  />
+                ))}
+              </ul>
+            )}
+
+            {!split && paged.pageCount > 1 && (
               <div className="pager">
                 <button
                   className="btn-secondary btn-small"
@@ -457,6 +530,51 @@ export default function InboxPage() {
         </div>
       )}
     </div>
+  );
+}
+
+// One row in the message list — shared by the flat and Split-Inbox renderings.
+function MsgRow({
+  item,
+  selected,
+  done,
+  onSelect,
+}: {
+  item: Item;
+  selected: boolean;
+  done: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <li>
+      <button className={`msg-row ${selected ? "selected" : ""} ${done ? "done" : ""}`} onClick={onSelect}>
+        {item.status === "ACTIVE" ? (
+          <>
+            <span className={`msg-dot ${priorityClass(item.payload.priority)}`} aria-hidden />
+            <span className="msg-main">
+              <span className="msg-sender">{item.payload.from}</span>
+              <span className="msg-subject">{item.payload.subject}</span>
+              <span className="msg-snippet">{item.payload.summary}</span>
+            </span>
+            <span className="msg-side">
+              <span className="msg-time">{fmt(item.payload.receivedAt)}</span>
+              <span className="msg-count">{forgetCountdown(item.forgetAt)}</span>
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="msg-dot p-Low" aria-hidden />
+            <span className="msg-main">
+              <span className="msg-sender">🔒 Forgotten</span>
+              <span className="msg-snippet">Content permanently destroyed.</span>
+            </span>
+            <span className="msg-side">
+              <span className="msg-time">{fmt(item.forgottenAt)}</span>
+            </span>
+          </>
+        )}
+      </button>
+    </li>
   );
 }
 

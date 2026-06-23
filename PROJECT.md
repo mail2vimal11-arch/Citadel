@@ -63,6 +63,10 @@ interfaces and marked `// TODO(production):`.
    `userId` on every stored item, audit row, setting, and Gmail token, and every
    query scoped per user so accounts can't see each other's data. Falls back to a
    single-user demo (no login) when auth env is unset, keeping the public demo open.
+8. **Daily-driver UX** — read-only **Gmail + Microsoft 365** connectors, a
+   two-pane keyboard-driven reader, **Split Inbox** lanes (VIP/Important/etc.),
+   **Write-with-AI** + a per-user tone profile, and a background **forget
+   scheduler**. (See `BUILD_PLAN.md` for the phase-by-phase detail.)
 
 ### Explicitly out of scope (production seams)
 Real OAuth mailbox connectors · Apertus served on Canadian infra · real HSM/KMS ·

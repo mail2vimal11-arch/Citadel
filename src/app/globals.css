@@ -317,7 +317,14 @@ button:disabled { opacity: 0.45; cursor: default; }
 .inbox-layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
 @media (max-width: 880px) { .inbox-layout { grid-template-columns: 1fr; } }
 
-.list-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.list-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+.btn-secondary.is-on { color: var(--ink); border-color: var(--accent); background: var(--accent-soft); }
+
+/* Split Inbox lanes (P6) */
+.lane { margin-bottom: 16px; }
+.lane-head { display: flex; align-items: center; gap: 8px; padding: 0 2px 6px; }
+.lane-name { font-size: 12px; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase; color: var(--accent-ink); }
+.lane-count { font-size: 11px; font-weight: 600; color: var(--muted); background: var(--panel-2); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; }
 
 .msg-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; background: var(--panel); }
 .msg-list li + li .msg-row { border-top: 1px solid var(--line); }

@@ -7,6 +7,14 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **P6 — Split Inbox / auto-triage lanes (BUILD_PLAN):** the inbox can group into
+  lanes instead of one flat list — **VIP / Important / Newsletters & notices /
+  Everything else / Forgotten** — routed by priority, triage label, and a
+  user-defined **VIP sender list**. A Split: On/Off toggle and an inline VIP
+  editor live in the list toolbar; keyboard nav follows the grouped order;
+  both preferences persist in `localStorage` (client-only, like the "done"
+  declutter). Routing is a pure, unit-tested module (`src/lib/lanes.ts`) — 11
+  new tests (92 total green).
 - **CI: SSH auto-deploy.** Added a gated `deploy` job to the CI workflow that
   ships to the live host **after the build passes**, on a push to the deploy
   branch, via SSH (`git pull` + `docker compose up -d --build`). It no-ops with a

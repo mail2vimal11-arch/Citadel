@@ -32,7 +32,7 @@ rewrites, a separate grammar engine is redundant._
 | Superhuman feature | Tier | Citadel | Notes |
 |---|---|---|---|
 | Priority/triage labels | Starter | ✅ | AI triage (Urgent/Action/FYI/Low + label) |
-| Split Inbox (lanes: VIP/tool/rule) | Starter | 🔜 | P6 |
+| Split Inbox (lanes: VIP/tool/rule) | Starter | ✅ | lane routing by priority/label + VIP senders (P6) |
 | Auto Labels | Starter | 🟡 | per-item label today; custom labels P6 |
 | Custom Auto Labels | Business | 🔜 | P6 |
 | Snooze | Starter | 🔜 | P9 |

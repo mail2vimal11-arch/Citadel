@@ -129,11 +129,18 @@ T-shirt size (S/M/L). "Gate" phases unblock revenue and should not be skipped.
 - **Docs:** ARCHITECTURE (EmailSource status), README (connect M365),
   COMPETITIVE, CHANGELOG, CLAUDE. Done.
 
-### P6 · Split Inbox / auto-triage lanes  · M
+### P6 · Split Inbox / auto-triage lanes  · M · ✅ DONE (2026-06-23)
 - **Goal:** organize by VIP / tool / rule, not one flat list.
-- **Build:** user-defined lanes; route processed items by sender/label/rule.
-- **Test:** routing-rule unit tests.
-- **Docs:** PROJECT, COMPETITIVE, CHANGELOG.
+- **Built:** pure lane routing (`src/lib/lanes.ts`) — VIP / Important /
+  Newsletters / Everything else / Forgotten — by priority, triage label, and a
+  client-side **VIP sender list**. The inbox renders grouped lanes with a
+  Split: On/Off toggle and a VIP editor; keyboard nav (`j`/`k`) follows the
+  grouped order; preferences persist in `localStorage`. `TODO(production)`:
+  full user-defined lane CRUD + server-persisted rules.
+- **Tested:** 11 routing-rule unit tests (parse VIPs, per-lane assignment, VIP
+  precedence, grouping order + empty-lane exclusion). 92 green; `tsc` +
+  `next build` clean.
+- **Docs:** PROJECT, COMPETITIVE, CHANGELOG, CLAUDE. Done.
 
 ---
 

@@ -106,9 +106,11 @@ with Connect/Disconnect Microsoft in the inbox and a `microsoft`/`m365`
 profile (on `Setting`) folded into all prompts, a `/api/compose` prompt-to-draft
 endpoint + reading-pane "Write with AI" box, tone-aware auto-drafts, a
 content-free `DRAFTED` audit event, all over a pure tested prompt module
-(`src/lib/ai/prompts.ts`). Next on the fast path is **P12 (billing & freemium
-gating)**; P8 (Ask AI) is the other near-term option. See also `CHANGELOG.md`,
-`ROADMAP.md`, and `OPEN_BUGS.md`.
+(`src/lib/ai/prompts.ts`). **P6 (Split Inbox)** is done: pure lane routing
+(`src/lib/lanes.ts`) into VIP/Important/Newsletters/Other/Forgotten by
+priority/label + a client-side VIP sender list, with a Split toggle + VIP editor
+in the inbox. Next options: **P8 (Ask AI)** then **P12 (billing & freemium
+gating)**. See also `CHANGELOG.md`, `ROADMAP.md`, and `OPEN_BUGS.md`.
 
 ## Gotchas (learned the hard way)
 - Apertus needs its **chat template** applied or it rambles (math) / replies in
