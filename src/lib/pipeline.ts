@@ -5,7 +5,7 @@ import { resolveAIProvider } from "@/lib/ai";
 import { getEmailSource } from "@/lib/email";
 import type { EmailSource } from "@/lib/email/EmailSource";
 import { recordAudit } from "@/lib/audit";
-import { computeForgetAt, getForgetInterval } from "@/lib/settings";
+import { computeForgetAt, getForgetInterval, getTone } from "@/lib/settings";
 import type { DerivedPayload } from "@/lib/types";
 
 // The core "process the inbox" loop:
@@ -22,6 +22,7 @@ export async function processInbox(
   const ai = await resolveAIProvider();
   const vault = getKeyVault();
   const interval = await getForgetInterval(userId);
+  const tone = await getTone(userId); // auto-drafts use the user's voice
 
   const src = source ?? (await getEmailSource(userId));
   const emails = await src.listEmails();
@@ -43,7 +44,7 @@ export async function processInbox(
     const [summary, triage, draftReply] = await Promise.all([
       ai.summarize(email),
       ai.triage(email),
-      ai.draftReply(email),
+      ai.draftReply(email, { tone }),
     ]);
 
     const payload: DerivedPayload = {

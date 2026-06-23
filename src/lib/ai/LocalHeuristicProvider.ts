@@ -1,5 +1,6 @@
 import type { AIProvider, TriageResult } from "./AIProvider";
 import type { Priority, RawEmail } from "@/lib/types";
+import type { ComposeRequest, Tone } from "./prompts";
 
 // ============================================================================
 // LocalHeuristicProvider — the PLACEHOLDER "AI" used in the prototype.
@@ -81,7 +82,7 @@ export class LocalHeuristicProvider implements AIProvider {
     return { priority, triageLabel };
   }
 
-  async draftReply(email: RawEmail): Promise<string> {
+  async draftReply(email: RawEmail, opts?: { tone?: Tone }): Promise<string> {
     const name = firstName(email.from);
     const lower = `${email.subject} ${email.body}`.toLowerCase();
 
@@ -105,6 +106,32 @@ export class LocalHeuristicProvider implements AIProvider {
         "answer shortly.";
     }
 
-    return `Hi ${name},\n\n${middle}\n\nBest regards,\n[Your name]`;
+    return wrapTone(opts?.tone, `Hi ${name},`, middle);
   }
+
+  // Write-with-AI, offline. Deterministic: it does not "understand" the request,
+  // it frames the user's own words into a tone-appropriate email shell so the
+  // feature still works with no Ollama. The real drafting is the Apertus path.
+  async compose(req: ComposeRequest): Promise<string> {
+    const instruction = req.instruction?.trim();
+    if (!instruction) return "";
+    const greeting = req.context?.from ? `Hi ${firstName(req.context.from)},` : "Hello,";
+    const body = instruction.charAt(0).toUpperCase() + instruction.slice(1);
+    return wrapTone(req.tone, greeting, body);
+  }
+}
+
+// Shape a greeting + body into an email whose opener/closer reflect the tone.
+// (Offline placeholder styling only — the model does the real voice work.)
+function wrapTone(tone: Tone | undefined, greeting: string, body: string): string {
+  const closings: Record<string, string> = {
+    professional: "Best regards,",
+    warm: "Warm regards,",
+    concise: "Thanks,",
+    direct: "Regards,",
+    formal: "Yours sincerely,",
+  };
+  if (tone === "concise") return `${greeting}\n\n${body}\n\nThanks,\n[Your name]`;
+  const closing = closings[tone ?? "professional"] ?? "Best regards,";
+  return `${greeting}\n\n${body}\n\n${closing}\n[Your name]`;
 }

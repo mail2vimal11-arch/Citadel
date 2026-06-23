@@ -1,4 +1,5 @@
 import type { Priority, RawEmail } from "@/lib/types";
+import type { ComposeRequest, Tone } from "./prompts";
 
 export interface TriageResult {
   priority: Priority;
@@ -16,5 +17,9 @@ export interface AIProvider {
   readonly name: string;
   summarize(email: RawEmail): Promise<string>;
   triage(email: RawEmail): Promise<TriageResult>;
-  draftReply(email: RawEmail): Promise<string>;
+  // Auto-draft a reply to an incoming email, optionally in the user's tone.
+  draftReply(email: RawEmail, opts?: { tone?: Tone }): Promise<string>;
+  // Write-with-AI: compose a draft from a freeform instruction (+ optional
+  // reply context and tone). Returns the email text only.
+  compose(req: ComposeRequest): Promise<string>;
 }

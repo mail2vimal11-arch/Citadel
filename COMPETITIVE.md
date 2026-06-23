@@ -42,11 +42,11 @@ rewrites, a separate grammar engine is redundant._
 | Superhuman feature | Tier | Citadel | Notes |
 |---|---|---|---|
 | AI runs **locally / on infra you control** | — | 🆚 | Apertus via Ollama; no US cloud |
-| Write with AI (draft from a prompt) | Starter | 🟡 | have draftReply; prompt-to-draft P7 |
-| Auto Drafts (proactive replies in your tone) | Business | 🔜 | P7 |
+| Write with AI (draft from a prompt) | Starter | ✅ | `/api/compose` + reading-pane box, local model |
+| Auto Drafts (proactive replies in your tone) | Business | ✅ | tone-aware auto-draft on every processed email 🆚 (local) |
 | Ask AI (Q&A over inbox) | Business | 🔜 | P8 (RAG over derived data) |
 | Auto Summarize / TLDR | Starter | ✅ | one-line summaries today |
-| Tone & Voice / self-personalization | Starter | 🔜 | P7 |
+| Tone & Voice / self-personalization | Starter | ✅ | per-user tone profile folded into every prompt (local) |
 | Semantic search | Starter | ✅ | in-memory embeddings, never persisted 🆚 |
 | Agentic workflows / outbound agent | Business+ | 🔜 | P17 (optional, late) |
 | AI Knowledge Base / MCP connectors | Business+ | 🔜 | P17 |

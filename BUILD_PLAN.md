@@ -139,12 +139,21 @@ T-shirt size (S/M/L). "Gate" phases unblock revenue and should not be skipped.
 
 ## Stage C — AI that earns the premium
 
-### P7 · Write-with-AI + Auto Drafts + Tone  · M
+### P7 · Write-with-AI + Auto Drafts + Tone  · M · ✅ DONE (2026-06-23)
 - **Goal:** draft from a prompt; proactively suggest replies in the user's voice.
-- **Build:** prompt-to-draft endpoint; opt-in auto-draft on incoming; a
-  per-user tone profile fed into the system prompt. All via `ApertusLocalProvider`.
-- **Test:** prompt-assembly unit tests; fallback-path tests.
-- **Docs:** ARCHITECTURE (AI prompts), COMPETITIVE, CHANGELOG.
+- **Built:** a **prompt-to-draft** endpoint (`/api/compose`) + a "Write with AI"
+  box in the reading pane; the pipeline **auto-draft** now uses the user's tone;
+  a **per-user tone profile** (5 tones on the `Setting` row, picker in Settings)
+  folded into the system prompt. All wording/tone assembly is pure
+  (`src/lib/ai/prompts.ts`); both providers implement `compose`/tone so it works
+  offline. Compose persists nothing and logs a content-free `DRAFTED` audit event;
+  reply context is derived-only (never a raw body).
+- **Tested:** prompt-assembly + tone unit tests (normalize, directive,
+  draft/compose message builders, context on/off) and heuristic fallback tests
+  (compose framing, tone-aware closings). 81 green; `tsc` + `next build` clean;
+  runtime smoke (set tone → compose returns a draft in that voice; empty → 400).
+- **Docs:** ARCHITECTURE (AI prompts/tone + compose), COMPETITIVE, CHANGELOG,
+  CLAUDE. Done.
 
 ### P8 · Ask AI (Q&A over your inbox)  · M
 - **Goal:** "what did Jordan say about the deadline?"

@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 
-export type AuditEventType = "PROCESSED" | "FORGOTTEN" | "SETTINGS_CHANGED";
+export type AuditEventType = "PROCESSED" | "FORGOTTEN" | "SETTINGS_CHANGED" | "DRAFTED";
 
 // Write an append-only audit entry.
 //

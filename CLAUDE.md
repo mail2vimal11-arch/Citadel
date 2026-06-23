@@ -102,8 +102,13 @@ declutter, and pagination, all over a pure tested view-model
 `MicrosoftGraphSource` (`Mail.Read` via Microsoft Graph, OAuth on `/common` for
 work + personal accounts, per-user gitignored tokens, pure tested `graphParse`),
 with Connect/Disconnect Microsoft in the inbox and a `microsoft`/`m365`
-`EMAIL_SOURCE` option. Next on the fast path is **P7 (Write-with-AI / drafts)**.
-See also `CHANGELOG.md`, `ROADMAP.md`, and `OPEN_BUGS.md`.
+`EMAIL_SOURCE` option. **P7 (Write-with-AI + tone)** is done: a per-user tone
+profile (on `Setting`) folded into all prompts, a `/api/compose` prompt-to-draft
+endpoint + reading-pane "Write with AI" box, tone-aware auto-drafts, a
+content-free `DRAFTED` audit event, all over a pure tested prompt module
+(`src/lib/ai/prompts.ts`). Next on the fast path is **P12 (billing & freemium
+gating)**; P8 (Ask AI) is the other near-term option. See also `CHANGELOG.md`,
+`ROADMAP.md`, and `OPEN_BUGS.md`.
 
 ## Gotchas (learned the hard way)
 - Apertus needs its **chat template** applied or it rambles (math) / replies in

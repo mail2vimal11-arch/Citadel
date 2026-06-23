@@ -542,6 +542,32 @@ function ReadingActive({
       /* clipboard may be unavailable; ignore */
     }
   };
+
+  // Write-with-AI: compose a draft from a freeform instruction, in the user's tone.
+  const [instruction, setInstruction] = useState("");
+  const [composed, setComposed] = useState<string | null>(null);
+  const [composing, setComposing] = useState(false);
+  const compose = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!instruction.trim()) return;
+    setComposing(true);
+    setComposed(null);
+    const res = await fetch("/api/compose", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ instruction, itemId: item.id }),
+    });
+    const d = await res.json();
+    setComposing(false);
+    setComposed(d.draft || "(The assistant returned an empty draft.)");
+  };
+
+  // Reset the compose box when switching to a different message.
+  useEffect(() => {
+    setInstruction("");
+    setComposed(null);
+  }, [item.id]);
+
   return (
     <div className="reading">
       <div className="reading-head">
@@ -575,6 +601,38 @@ function ReadingActive({
         </div>
         {p.draftReply}
       </div>
+
+      <form className="compose" onSubmit={compose}>
+        <div className="reading-section-label">Write with AI</div>
+        <textarea
+          className="compose-input"
+          rows={2}
+          placeholder="Tell the assistant what to say — e.g. “Ask for a one-week extension and propose Friday.”"
+          value={instruction}
+          onChange={(e) => setInstruction(e.target.value)}
+        />
+        <div className="toolbar" style={{ margin: "8px 0 0" }}>
+          <button className="btn-primary btn-small" type="submit" disabled={composing || !instruction.trim()}>
+            {composing ? "Drafting…" : "Draft with AI"}
+          </button>
+          <span className="note" style={{ margin: 0 }}>Runs locally · uses your saved tone</span>
+        </div>
+        {composed !== null && (
+          <div className="draft" style={{ marginTop: 10 }}>
+            <div className="draft-label" style={{ display: "flex", justifyContent: "space-between" }}>
+              <span>AI draft</span>
+              <button
+                type="button"
+                className="btn-secondary btn-small"
+                onClick={() => navigator.clipboard?.writeText(composed).catch(() => {})}
+              >
+                Copy
+              </button>
+            </div>
+            {composed}
+          </div>
+        )}
+      </form>
 
       <div className="toolbar" style={{ marginTop: 14, marginBottom: 0 }}>
         <button className="btn-secondary btn-small" onClick={() => onDone(item.id)} disabled={done}>

@@ -7,6 +7,19 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **P7 — Write-with-AI + Auto Drafts + Tone (BUILD_PLAN):** the AI now writes in
+  the user's voice. A **per-user tone profile** (Professional / Warm / Concise /
+  Direct / Formal, stored on the `Setting` row) is folded into the system prompt
+  for every draft. **Write-with-AI** — a new compose box in the reading pane —
+  turns a freeform instruction into an email via `POST /api/compose`, using the
+  saved tone and the selected message's NON-sensitive derived context
+  (from/subject/summary; never a raw body, since none is stored); nothing is
+  persisted, and a **content-free `DRAFTED`** audit entry records that the
+  assistant acted. The pipeline's **auto-draft** (the suggested reply on every
+  processed email) is now tone-aware too. All prompt wording + the tone directive
+  live in a pure, unit-tested module (`src/lib/ai/prompts.ts`); the offline
+  heuristic provider implements `compose`/tone so the feature works with no
+  Ollama. Settings page gains a tone picker. 15 new tests (81 total green).
 - **P5 — Microsoft 365 ingestion (BUILD_PLAN):** the second real mailbox.
   `MicrosoftGraphSource` reads recent inbox messages via **Microsoft Graph** with
   the least-privilege **`Mail.Read`** scope, returning bodies to the pipeline in

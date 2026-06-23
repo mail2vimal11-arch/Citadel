@@ -3,10 +3,13 @@
 import { useEffect, useState } from "react";
 
 type Option = { value: string; label: string; ms: number | null };
+type ToneOption = { value: string; label: string };
 
 export default function SettingsPage() {
   const [options, setOptions] = useState<Option[]>([]);
   const [selected, setSelected] = useState<string>("24h");
+  const [tones, setTones] = useState<ToneOption[]>([]);
+  const [tone, setTone] = useState<string>("professional");
   const [saved, setSaved] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -16,6 +19,8 @@ export default function SettingsPage() {
       .then((d) => {
         setOptions(d.options);
         setSelected(d.forgetInterval);
+        setTones(d.tones ?? []);
+        setTone(d.tone ?? "professional");
       });
   }, []);
 
@@ -30,6 +35,18 @@ export default function SettingsPage() {
     const d = await res.json();
     setBusy(false);
     setSaved(`Schedule saved. Updated ${d.updated} active item(s).`);
+  };
+
+  const saveTone = async (value: string) => {
+    setBusy(true);
+    setTone(value);
+    await fetch("/api/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tone: value }),
+    });
+    setBusy(false);
+    setSaved(`Tone saved. New AI drafts will use the “${value}” voice.`);
   };
 
   return (
@@ -64,6 +81,25 @@ export default function SettingsPage() {
         based on when each was originally processed. “On logout only” turns off the timer —
         items are kept until you click <em>“Log out &amp; forget all”</em> on the Inbox.
       </p>
+
+      <p className="subtitle" style={{ marginTop: 32 }}>Write-with-AI tone</p>
+      <p className="note" style={{ marginTop: -16, marginBottom: 14 }}>
+        The voice the local AI uses for suggested replies and the <em>Write with AI</em> box.
+        Runs 100% locally — your tone never leaves the machine.
+      </p>
+      {tones.map((t) => (
+        <label key={t.value} className={`radio-row ${tone === t.value ? "selected" : ""}`}>
+          <input
+            type="radio"
+            name="tone"
+            value={t.value}
+            checked={tone === t.value}
+            onChange={() => saveTone(t.value)}
+            disabled={busy}
+          />
+          <span>{t.label}</span>
+        </label>
+      ))}
 
       {saved && <div className="flash ok" style={{ marginTop: 14 }}>{saved}</div>}
     </div>

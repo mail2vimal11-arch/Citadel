@@ -83,17 +83,18 @@ model AuditEvent {
   userId    String
   itemId    String?
   sourceRef String? // a non-sensitive reference label, safe to keep after forget
-  event     String // PROCESSED | FORGOTTEN | SETTINGS_CHANGED
+  event     String // PROCESSED | FORGOTTEN | SETTINGS_CHANGED | DRAFTED
   message   String // human-readable, non-sensitive
   createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
 }
 
-// Per-user settings (the forget schedule). Keyed by userId.
+// Per-user settings (the forget schedule + the Write-with-AI tone). Keyed by userId.
 model Setting {
   userId         String @id
   forgetInterval String @default("24h") // "1h" | "24h" | "7d" | "logout"
+  tone           String @default("professional") // professional | warm | concise | direct | formal
 }
 
 // --------------------------------------------------------------------------
