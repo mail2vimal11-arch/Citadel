@@ -129,6 +129,40 @@ T-shirt size (S/M/L). "Gate" phases unblock revenue and should not be skipped.
 - **Docs:** ARCHITECTURE (EmailSource status), README (connect M365),
   COMPETITIVE, CHANGELOG, CLAUDE. Done.
 
+### P5.5 · Multi-account mailbox  · M · 🔜 PLANNED
+- **Goal:** connect **several** Gmail / Microsoft accounts per user (work +
+  personal), not one of each. Today the token is one file per provider per user
+  (`google-<userId>.json` / `microsoft-<userId>.json`), so a second connect
+  **overwrites** the first.
+- **Build:**
+  - **Token store → per-account list.** Replace the single-token file with a
+    per-user, per-provider **list of account records** (each: stable `accountId`,
+    `email`, own refresh/access token). Read-time **migration** folds an existing
+    single-file token into a one-element list so connected users don't re-auth.
+    Keep tokens gitignored / out of the DB (same `// TODO(production):` secrets-manager note).
+  - **"Add account" OAuth.** Start route adds a new slot instead of replacing;
+    force the account chooser (`prompt=select_account` for Google; Microsoft
+    already does). Callback keys the token by the Google/Microsoft account id.
+  - **Composite source.** `getEmailSource` returns a source that **merges all
+    connected accounts** for the user (Gmail + Microsoft together). Namespace
+    `sourceId` by account — `gmail:<accountId>:<msgid>` — so two accounts never
+    collide; keep bodies in-memory only.
+  - **UI.** Replace the single connect/disconnect toggle with a **list of
+    connected accounts** (each shows its email + its own Disconnect) plus
+    **Add Gmail / Add Microsoft**. The connected banner summarizes "N accounts".
+  - **Gating hook.** Expose the account count so **P12** can cap the free tier to
+    1 account (full tier = many).
+- **Test:** token-store migration (single file → list) + add/remove account; the
+  composite source merges + de-dupes across accounts; sourceId namespacing avoids
+  collisions; selector still picks sample when none connected.
+- **Docs:** ARCHITECTURE (EmailSource: multi-account token model), README
+  (connect multiple accounts), COMPETITIVE (multi-account ✅), CHANGELOG, CLAUDE.
+- **Done-when:** a user can connect two Gmail accounts (and/or Microsoft), see
+  both mailboxes merged in one inbox, and disconnect either independently without
+  affecting the other.
+- **Notes:** raised during P8 — the connect UI only supported one account per
+  provider. Independent of the AI phases; can slot in any time before/with P12.
+
 ### P6 · Split Inbox / auto-triage lanes  · M · ✅ DONE (2026-06-23)
 - **Goal:** organize by VIP / tool / rule, not one flat list.
 - **Built:** pure lane routing (`src/lib/lanes.ts`) — VIP / Important /

@@ -29,6 +29,17 @@ _Last updated: 2026-06-23_
   endpoint.
 - **Status:** Open (enhancement).
 
+### BUG-005 — One mailbox per provider (no multi-account)
+- **Severity:** Medium (feature gap)
+- **Where:** `src/lib/email/googleAuth.ts` / `microsoftAuth.ts` — the token is one
+  file per provider per user (`google-<userId>.json`), so connecting a second
+  Gmail **overwrites** the first. Max one Gmail + one Microsoft per user.
+- **Symptom:** can't add work + personal Gmail (or multiple Outlook tenants).
+- **Fix:** **BUILD_PLAN P5.5 (Multi-account mailbox)** — per-account token list +
+  "Add account" UI + a composite source that merges accounts (sourceIds
+  namespaced per account). Planned, not yet built.
+- **Status:** Open (planned — P5.5).
+
 ### BUG-004 — Residual Next.js security advisories
 - **Severity:** Low (for this prototype — issues are DoS / image-optimizer /
   middleware / cache-poisoning, none exercised by this app)
