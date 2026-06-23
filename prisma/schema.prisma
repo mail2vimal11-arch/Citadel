@@ -14,6 +14,15 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// Storage seam. SQLite is the local/CI/offline-demo default. The data model is
+// provider-agnostic (no SQLite-specific column types or SQL), so going durable is
+// a two-line switch with no schema rewrite:
+//   1. provider = "postgresql"
+//   2. DATABASE_URL = a Canadian-region managed Postgres connection string
+// then `prisma db push`. See ARCHITECTURE.md ("Durable storage") and the opt-in
+// migration smoke test (src/lib/db.postgres.test.ts). TODO(production): run on a
+// Canadian-region managed Postgres with encryption-at-rest, access logging, and
+// residency-governed backups.
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")

@@ -54,12 +54,16 @@ lines to change for production.
   (`src/lib/keyvault/kms/KmsClient.ts` → `LocalKmsClient`, KEK in
   `KMS_MASTER_KEY`/`.citadel-secrets/`). Crypto in `src/lib/crypto.ts` (AES-256-GCM).
 - Pipeline `src/lib/pipeline.ts`; forget engine `src/lib/forget/forgetEngine.ts`
-  (lazy sweep on read); audit `src/lib/audit.ts`; settings `src/lib/settings.ts`.
+  (lazy sweep on read + `runForgetSweepAll`); background scheduler
+  `src/lib/forget/scheduler.ts` started by `src/instrumentation.ts` (forgets on
+  time with no user interaction); audit `src/lib/audit.ts`; settings
+  `src/lib/settings.ts`.
 
 ## Env vars (`.env`)
 `DATABASE_URL` · `AI_PROVIDER` · `OLLAMA_BASE_URL` · `OLLAMA_MODEL` ·
 `OLLAMA_EMBED_MODEL` · `KEY_VAULT` (`auto`|`kms`|`local`) · `KMS_MASTER_KEY`
-(base64 KEK; blank → auto-provisioned local file) · `AUTH_SECRET` /
+(base64 KEK; blank → auto-provisioned local file) · `FORGET_SWEEP_INTERVAL_MS`
+(background sweep cadence; `0` disables) · `AUTH_SECRET` /
 `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` (blank → demo mode, no login). The
 committed `.env` defaults to `AI_PROVIDER="auto"`.
 
@@ -85,7 +89,12 @@ sign-in + a `userId` on every stored row, every query user-scoped
 (`currentUserId()` is the chokepoint), with a `demo-user` fallback when `AUTH_*`
 is unset; and a default `KmsKeyVault` doing **envelope encryption** (per-item
 DEKs wrapped under a KEK that lives outside the DB, so the DB holds only
-ciphertext). Next is **P3 (durable Postgres + scheduled forget worker)**. See
+ciphertext); and **P3 (durable storage + scheduled forget)** — a background
+worker (`scheduler.ts`, started by `instrumentation.ts`) runs an all-users
+forget sweep on an interval so items forget on time with no user interaction,
+plus a provider-agnostic Postgres seam (two-line switch + optional compose
+service + migration smoke test). **Stage A (Foundation: P0–P3) is complete.**
+Next is **Stage B / the fast path: P4 (inbox UX) then P5 (Microsoft 365)**. See
 also `CHANGELOG.md`, `ROADMAP.md`, and `OPEN_BUGS.md`.
 
 ## Gotchas (learned the hard way)

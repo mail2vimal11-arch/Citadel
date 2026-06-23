@@ -140,11 +140,36 @@ vault are read transparently so upgrading never loses data.
 | Crypto | `src/lib/crypto.ts` | AES-256-GCM encrypt/decrypt of the derived payload |
 | Search | `src/lib/search.ts` | in-memory semantic search via `EmbeddingProvider` (keyword fallback) |
 | Pipeline | `src/lib/pipeline.ts` | email → AI → encrypt → store + `PROCESSED` audit |
-| Forget engine | `src/lib/forget/forgetEngine.ts` | sweep expired / forget one / forget all → destroy key + `FORGOTTEN` audit |
+| Forget engine | `src/lib/forget/forgetEngine.ts` | sweep expired (per-user + all-users) / forget one / forget all → destroy key + `FORGOTTEN` audit |
+| Forget scheduler | `src/lib/forget/scheduler.ts` | background worker (started by `src/instrumentation.ts`) that runs the all-users sweep on an interval |
 | Inbox reader | `src/lib/inbox.ts` | decrypts active items in-memory; proof-of-unrecoverability helper |
 | Settings | `src/lib/settings.ts` | forget-interval storage + deadline computation |
 | Audit | `src/lib/audit.ts` | append-only, content-free event log |
 | DB client | `src/lib/db.ts` | Prisma client (query logging deliberately off) |
+
+### Forgetting on schedule (not just on read)
+Two mechanisms drive a forget, and both are crypto-shred (destroy the per-item
+key → ciphertext unrecoverable):
+- **On-read sweep** — `runForgetSweep(userId)` fires from the API routes, so
+  expired items are gone the moment you open the inbox/audit.
+- **Background scheduler** — `startForgetScheduler()` (launched on server boot
+  by `src/instrumentation.ts`) runs `runForgetSweepAll()` every
+  `FORGET_SWEEP_INTERVAL_MS` (default 60s, `0` disables) so deadlines are honoured
+  **with no user interaction**. It's idempotent and logs only a count (content-
+  free). Because the scheduler's node-only graph (Prisma, KMS) can't compile for
+  the Edge runtime, `next.config.mjs` swaps it for a no-op stub in non-Node builds
+  (`scheduler.stub.ts`); `instrumentation.ts` only starts it on `nodejs`.
+  `// TODO(production):` for multi-instance deploys, run the sweep from a single
+  leader (advisory lock) or external cron/queue — the logic is already idempotent.
+
+### Durable storage (the P3 seam)
+SQLite is the local/CI/offline-demo default. The data model is provider-agnostic
+(no SQLite-only types or SQL), so going durable is a two-line switch — set
+`provider = "postgresql"` in `prisma/schema.prisma`, point `DATABASE_URL` at a
+**Canadian-region managed Postgres**, then `prisma db push`. `docker-compose.yml`
+ships an optional local `db` service (`docker compose --profile postgres up -d db`)
+and `src/lib/db.postgres.test.ts` validates the schema under the Postgres provider
+(offline) with an opt-in live push via `TEST_DATABASE_URL`.
 
 ## Data model — `prisma/schema.prisma`
 

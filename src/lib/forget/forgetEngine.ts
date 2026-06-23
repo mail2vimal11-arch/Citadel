@@ -34,6 +34,12 @@ async function forgetOne(userId: string, itemId: string, keyId: string): Promise
   });
 }
 
+// Is an item past its forget deadline? Pure predicate, used by the sweep and
+// unit-tested directly. A null deadline means "never auto-forget".
+export function isDue(forgetAt: Date | null, now: Date = new Date()): boolean {
+  return forgetAt !== null && forgetAt.getTime() <= now.getTime();
+}
+
 // Sweep: forget every ACTIVE item (for this user) whose deadline has passed.
 // Safe to call often (e.g. on every page load / API request) — it's a no-op
 // when nothing has expired.
@@ -44,6 +50,21 @@ export async function runForgetSweep(userId: string, now: Date = new Date()): Pr
   });
   for (const item of due) {
     await forgetOne(userId, item.id, item.keyId);
+  }
+  return due.length;
+}
+
+// Sweep across ALL users. This is what the background scheduler calls so items
+// forget on time even if no one ever opens the app — the "we forget for you,
+// not just when you look" guarantee. The per-request sweep above stays as a
+// belt-and-braces backstop. Returns the number of items forgotten.
+export async function runForgetSweepAll(now: Date = new Date()): Promise<number> {
+  const due = await prisma.derivedItem.findMany({
+    where: { status: "ACTIVE", forgetAt: { not: null, lte: now } },
+    select: { id: true, keyId: true, userId: true },
+  });
+  for (const item of due) {
+    await forgetOne(item.userId, item.id, item.keyId);
   }
   return due.length;
 }

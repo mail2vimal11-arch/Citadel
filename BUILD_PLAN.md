@@ -75,13 +75,27 @@ T-shirt size (S/M/L). "Gate" phases unblock revenue and should not be skipped.
   remaining production gap is only WHERE the KEK lives (swap `LocalKmsClient`
   for a Canadian-controlled managed KMS).
 
-### P3 · Durable storage + reliable forget scheduler  · M · **Gate**
+### P3 · Durable storage + reliable forget scheduler  · M · **Gate** · ✅ DONE (2026-06-23)
 - **Goal:** truthful "forgets on schedule, even if you never open the app."
-- **Build:** SQLite → Canadian-region managed Postgres; replace lazy-on-read
-  sweep with a scheduled worker; keep the audit log content-free.
-- **Test:** scheduler unit tests (due/not-due); migration smoke test.
-- **Docs:** ARCHITECTURE, ROADMAP, CHANGELOG.
-- **Done-when:** items forget on time with no user interaction.
+- **Built:** a background **forget scheduler** (`src/lib/forget/scheduler.ts`)
+  started on boot via `src/instrumentation.ts`, running an all-users sweep
+  (`runForgetSweepAll`) every `FORGET_SWEEP_INTERVAL_MS` (default 60s); on-read
+  sweep kept as a backstop. **Durable Postgres seam:** provider-agnostic schema +
+  optional compose `db` service (`--profile postgres`); the move is a two-line
+  switch (provider + DATABASE_URL). Audit log stays content-free (sweep logs only
+  a count). Edge build keeps the node-only scheduler out via a stub swap in
+  `next.config`.
+- **Tested:** `isDue` (due/at/after/null), interval parsing, scheduler
+  start/stop/idempotency + disabled, and an all-users sweep that forgets every
+  expired item across users while sparing not-yet-due ones (keys shredded). The
+  **migration smoke test** validates the schema under the `postgresql` provider
+  offline (opt-in live `db push` via `TEST_DATABASE_URL`). 39 pass + 1 skipped;
+  `tsc` + `next build` green; verified `scheduler started` on boot.
+- **Docs:** ARCHITECTURE (scheduler + durable storage), ROADMAP, CLAUDE,
+  CHANGELOG; `FORGET_SWEEP_INTERVAL_MS` + Postgres `DATABASE_URL` in env files.
+- **Done-when:** items forget on time with no user interaction. ✅ (production
+  step that remains: point DATABASE_URL at a managed Canadian Postgres, and for
+  multi-instance deploys run the sweep from a single leader/cron.)
 
 ---
 

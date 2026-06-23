@@ -28,9 +28,34 @@ services:
       - "traefik.http.routers.citadel.tls.certresolver=letsencrypt"
       - "traefik.http.services.citadel.loadbalancer.server.port=3000"
 
+  # Optional durable Postgres for the P3 storage seam. It is OFF by default (the
+  # live deploy uses the SQLite volume above); start it explicitly with
+  #   docker compose --profile postgres up -d db
+  # then point the app at it by setting, in .env.docker:
+  #   DATABASE_URL=postgresql://citadel:citadel@db:5432/citadel
+  # and flipping the Prisma provider to "postgresql" (see prisma/schema.prisma).
+  # TODO(production): replace this with a Canadian-region managed Postgres.
+  db:
+    image: postgres:16-alpine
+    container_name: citadel-db
+    restart: unless-stopped
+    profiles: ["postgres"]
+    environment:
+      POSTGRES_USER: citadel
+      POSTGRES_PASSWORD: citadel
+      POSTGRES_DB: citadel
+    volumes:
+      - citadel-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U citadel"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   citadel-data:
   citadel-secrets:
+  citadel-pg:
 
 networks:
   default:

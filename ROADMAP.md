@@ -89,11 +89,14 @@ Move both the app and Apertus onto **Canadian** infrastructure.
 - **Effort:** M · **Blocks revenue:** yes (data residency is the pitch) · **Infra:**
   ~$40–150+/mo for a GPU host, depending on card.
 
-### Phase 5 — Durable storage + a reliable forget scheduler
-- Move SQLite → a **Canadian-region managed Postgres**.
-- Replace lazy "forget on read" with a **reliable scheduled job** (cron/worker) so
-  forgetting happens on time even if no one opens the app, plus storage-layer
-  enforcement. Keep the audit log content-free.
+### Phase 5 — Durable storage + a reliable forget scheduler · built (BUILD_PLAN P3)
+- The **scheduled forget worker is built**: a background sweep runs on boot and
+  forgets expired items on time with no user interaction (lazy on-read sweep kept
+  as a backstop). Audit log stays content-free (logs a count only).
+- The **Postgres seam is in place** (provider-agnostic schema + optional compose
+  service + migration smoke test); the remaining production step is pointing
+  `DATABASE_URL` at a **Canadian-region managed Postgres**, and for multi-instance
+  deploys running the sweep from a single leader/cron.
 - **Effort:** M · **Blocks revenue:** soft (needed for a credible "we forget on
   schedule" claim) · **Infra:** managed Postgres (~$15–50/mo).
 

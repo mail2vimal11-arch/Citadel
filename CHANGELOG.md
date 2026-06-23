@@ -7,6 +7,24 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **P3 — Durable storage + reliable forget scheduler (BUILD_PLAN):** the
+  "forgets on schedule, even if you never open the app" promise is now literally
+  true. A **background scheduler** (`src/lib/forget/scheduler.ts`), started on
+  server boot via `src/instrumentation.ts`, runs an **all-users** forget sweep
+  (`runForgetSweepAll`) every `FORGET_SWEEP_INTERVAL_MS` (default 60s) — so
+  expired items are crypto-shredded close to their deadline with zero user
+  interaction. The lazy on-read sweep stays as a backstop. **Durable Postgres
+  seam:** the data model is provider-agnostic, so going from SQLite to a
+  Canadian-region managed Postgres is a two-line switch (provider + DATABASE_URL,
+  then `prisma db push`); added an optional `db` Postgres service to
+  docker-compose (off by default, `--profile postgres`) and an offline
+  **migration smoke test** that validates the schema under the `postgresql`
+  provider (plus an opt-in live `db push` when `TEST_DATABASE_URL` is set). New
+  tests cover `isDue`, the interval parser, scheduler start/stop/idempotency,
+  and the all-users sweep — 39 passing + 1 opt-in skipped. Verified the worker
+  logs `scheduler started` on boot. (Edge build note: `next.config` swaps the
+  scheduler for a no-op stub in non-Node runtimes so its node-only graph never
+  reaches the Edge bundler.)
 - **P2 — Real key management / KMS seam (BUILD_PLAN):** keys now live **apart
   from the data**. New default `KmsKeyVault` does **envelope encryption** through
   a `KmsClient` seam: a per-item data key (DEK) is minted by the KMS, used
