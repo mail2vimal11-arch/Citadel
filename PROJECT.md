@@ -56,7 +56,9 @@ interfaces and marked `// TODO(production):`.
 4. **Forget engine** — destroy the per-item key on schedule (1h / 24h / 7d / logout)
    → data permanently unrecoverable; write a `FORGOTTEN` audit entry.
 5. **Audit log** — content-free `PROCESSED` / `FORGOTTEN` events.
-6. **Inbox UI**, settings panel for the schedule, semantic search box.
+6. **Inbox UI**, settings panel for the schedule, semantic search box — plus a
+   **marketing landing page** (`/`) in a dark, Superhuman-style design; the app
+   lives at `/inbox`.
 
 ### Explicitly out of scope (production seams)
 Real OAuth mailbox connectors · Apertus served on Canadian infra · real HSM/KMS ·
@@ -71,8 +73,15 @@ the real versions. App code only ever sees the interfaces. Full detail in
 
 ## Current state
 - Milestones 1–6 complete; typecheck + build green.
-- Verified end-to-end on a **Hostinger KVM 4 VPS** (Ubuntu): real Apertus output in
-  English, encrypt → forget → audit all working. CPU-only, so processing is slow.
+- **Renamed Citadel**, broadened positioning, freemium model defined.
+- **Real read-only Gmail** ingestion (Gmail API + OAuth) shipped behind the
+  `EmailSource` seam; Microsoft 365 (`/common`) is next.
+- **Dark, Superhuman-style UI** + a **marketing landing page** at `/`.
+- **Live at `https://citadel.aletheos.tech`** — deployed as a Docker container
+  behind the host's existing Traefik proxy (auto HTTPS via Let's Encrypt).
+- Originally verified end-to-end on a **Hostinger KVM 4 VPS** (Ubuntu): real
+  Apertus output in English, encrypt → forget → audit all working. CPU-only,
+  so processing is slow (Canadian GPU host is the production fix).
 - Branch `claude/sovereign-inbox-prototype-o03qrz`, draft **PR #3**.
 
 ## Hosting decisions / notes

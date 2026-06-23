@@ -29,6 +29,16 @@ Both `AIProvider` and `EmbeddingProvider` talk to a **local Ollama server**
 That client's base URL is the single seam to repoint at Canadian-hosted
 infrastructure — no API keys or cloud endpoints exist anywhere in the app.
 
+## Routes & layout
+- `/` — marketing landing (`src/app/page.tsx`), bare root layout, no app nav.
+- `/inbox`, `/settings`, `/audit` — the app, under the `(app)` route group
+  (`src/app/(app)/layout.tsx` adds the shared `Nav`). The route group keeps the
+  app chrome off the landing without changing URLs.
+- `/api/...` — server routes (process, items, forget, settings, audit, reset,
+  search, and `auth/google[/callback|/status]` for the Gmail OAuth flow).
+- `EMAIL_SOURCE` (`auto|sample|gmail`) and `APP_BASE_URL` (public origin, for
+  correct OAuth redirects behind a reverse proxy) are the relevant env knobs.
+
 ---
 
 ## The three interfaces

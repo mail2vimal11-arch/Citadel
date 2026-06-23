@@ -7,6 +7,20 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **Dark, Superhuman-style UI:** redesigned the theme to Superhuman's actual
+  palette — near-black canvas with ambient purple/pink/blue glows, the signature
+  purple→pink (`#9E6EE5→#FA75F8`) gradient on the primary button and brand mark,
+  gradient headings, glassy surfaces, and a translucent blurred top bar.
+- **Marketing landing page** at `/` (hero, faux inbox preview, feature trio,
+  how-it-works, freemium pricing, CTA). The app moved to `/inbox` behind an
+  `(app)` route group with its own nav layout; the landing uses the bare root
+  layout. Nav + the OAuth callback now target `/inbox`.
+- **Live deployment:** Citadel runs at `https://citadel.aletheos.tech` as a
+  Docker container behind the host's existing Traefik proxy (auto HTTPS via
+  Let's Encrypt). Added `Dockerfile`, `docker-compose.yml`, `.env.docker.example`,
+  and `APP_BASE_URL` for correct redirects behind the proxy.
+- **Fixes:** the connected-Gmail banner and the search box were still using light
+  inline styles that clashed on the dark theme — both now use the dark surfaces.
 - **Real Gmail ingestion (read-only):** implemented `GmailSource` against the Gmail
   API with OAuth 2.0 (`gmail.readonly`), plus the sign-in flow
   (`/api/auth/google`, `/callback`, `/status`) and a `getEmailSource()` selector

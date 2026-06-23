@@ -100,8 +100,13 @@ npm run demo     # 2. set up the local database and start the app
 When you see `Ready`, open your web browser to:
 
 ```
-http://localhost:3000
+http://localhost:3000          # the marketing landing page
+http://localhost:3000/inbox    # the actual app (inbox / settings / audit)
 ```
+
+> The home page (`/`) is a dark, Superhuman-style marketing landing; the working
+> app lives at `/inbox`. Click **"Get started" / "Open Citadel"** on the landing
+> to jump in.
 
 To stop the app, return to the terminal and press `Ctrl + C`.
 
@@ -121,7 +126,7 @@ To stop the app, return to the terminal and press `Ctrl + C`.
 
 This is the part to show design partners. Here's a 2-minute script:
 
-1. **Open the Inbox** (`http://localhost:3000`) and click **"Process inbox."**
+1. **Open the Inbox** (`http://localhost:3000/inbox`) and click **"Process inbox."**
    You'll see 15 emails, each with an AI summary, a colored priority label, and
    a triage category. Click **"Show suggested reply"** on any of them.
 

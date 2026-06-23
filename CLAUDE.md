@@ -28,7 +28,8 @@ Next.js 14.2.35 (App Router) · TypeScript · SQLite via Prisma 5.22 · local Ol
 ```bash
 npm install
 npx prisma db push                 # create/refresh local SQLite (prisma/dev.db)
-npm run demo                       # db push + next dev  (localhost:3000)
+npm run demo                       # db push + next dev  (/ = landing, /inbox = app)
+docker compose up -d --build       # production container (behind Traefik; see ROADMAP)
 npx next dev -H 0.0.0.0 -p 3000    # bind to all interfaces (VPS)
 npx tsc --noEmit                   # typecheck
 npx next build                     # full build (set AI_PROVIDER=heuristic if no Ollama)
@@ -61,11 +62,15 @@ lines to change for production.
 - Raw email bodies are in-memory only — never written to the DB.
 - Every production-only concern gets a `// TODO(production):` marker.
 
-## Status (2026-06-19)
-Milestones 1–6 complete. Real Apertus runs locally; verified end-to-end on a
-Hostinger VPS (English output, encrypt → forget → audit all working). Work lives on
-branch `claude/sovereign-inbox-prototype-o03qrz` (PR #3, draft). See `CHANGELOG.md`
-and `OPEN_BUGS.md`.
+## Status (2026-06-23)
+Milestones 1–6 complete. Real Apertus runs locally; real **read-only Gmail**
+ingestion shipped (Gmail API + OAuth). **Dark Superhuman-style UI** + a marketing
+landing at `/` (app at `/inbox`, via an `(app)` route group). **Live at
+`https://citadel.aletheos.tech`** — Docker container behind the host's existing
+Traefik proxy (auto HTTPS). Routes: `/` = landing, `/inbox` `/settings` `/audit`
+= app, `/api/auth/google*` = Gmail OAuth. Work lives on branch
+`claude/sovereign-inbox-prototype-o03qrz` (PR #3, draft). See `CHANGELOG.md`,
+`ROADMAP.md`, and `OPEN_BUGS.md`.
 
 ## Gotchas (learned the hard way)
 - Apertus needs its **chat template** applied or it rambles (math) / replies in

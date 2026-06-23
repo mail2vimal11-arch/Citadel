@@ -3,7 +3,7 @@
 Tracking file for the prototype. Each item has a severity and status. "By design"
 items are intentional prototype simplifications (documented, not defects).
 
-_Last updated: 2026-06-19_
+_Last updated: 2026-06-23_
 
 ---
 
@@ -40,6 +40,12 @@ _Last updated: 2026-06-19_
 ---
 
 ## Resolved
+
+### BUG-005 — Light-on-dark UI glitches after the dark redesign
+- **Resolved 2026-06-23.** After moving to the dark Superhuman-style theme, two
+  sections kept hard-coded light inline backgrounds: the connected-Gmail banner
+  and the semantic-search box. Both now use the dark theme surfaces
+  (`.banner.warn` and `.card`).
 
 ### BUG-002 — Triage over-labeled emails "Urgent"
 - **Resolved 2026-06-19.** Rewrote the triage prompt in `ApertusLocalProvider` with
