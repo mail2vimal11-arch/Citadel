@@ -153,7 +153,10 @@ export default function InboxPage() {
   return (
     <div>
       {gmail.connected ? (
-        <div className="banner" style={{ background: "#fff4e5", borderColor: "#f0c27b" }}>
+        <div
+          className="banner"
+          style={{ background: "#fdf6ec", borderColor: "#efd9ad", borderLeftColor: "#d9820a" }}
+        >
           <strong>Connected to a real Gmail ({gmail.email ?? "your account"}) — read-only.</strong>{" "}
           Message bodies are processed <strong>in memory only</strong> and never stored; only the
           encrypted AI-derived summary/triage/draft is kept. The AI still runs{" "}

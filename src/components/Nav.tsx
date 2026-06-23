@@ -14,10 +14,13 @@ export default function Nav() {
   return (
     <header className="topbar">
       <div className="brand">
-        Citadel
-        <small>Your sovereign inbox — privacy-first email assistant (concept prototype)</small>
+        <span className="logo" aria-hidden>C</span>
+        <span className="brand-text">
+          <b>Citadel</b>
+          <small>Your sovereign inbox</small>
+        </span>
       </div>
-      <nav>
+      <nav className="nav-links">
         {links.map((l) => (
           <Link key={l.href} href={l.href} className={path === l.href ? "active" : ""}>
             {l.label}
