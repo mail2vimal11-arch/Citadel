@@ -107,6 +107,13 @@ http://localhost:3000/inbox    # the actual app (inbox / settings / audit)
 > The home page (`/`) is a dark, Superhuman-style marketing landing; the working
 > app lives at `/inbox`. Click **"Get started" / "Open Citadel"** on the landing
 > to jump in.
+>
+> **Sign-in (optional):** out of the box the app runs in single-user **demo
+> mode** — no login, everything scoped to a built-in `demo-user`. Set
+> `AUTH_SECRET`, `AUTH_GOOGLE_ID`, and `AUTH_GOOGLE_SECRET` in `.env` (see the
+> "Accounts & sign-in" block there) and the app switches on Google sign-in at
+> `/signin` with **real per-user data isolation** — each account sees only its
+> own inbox, audit log, settings, and Gmail connection.
 
 To stop the app, return to the terminal and press `Ctrl + C`.
 

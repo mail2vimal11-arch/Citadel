@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { exchangeCodeForToken } from "@/lib/email/googleAuth";
+import { currentUserId } from "@/lib/currentUser";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,8 @@ export async function GET(req: NextRequest) {
   if (!code || !state || !cookieState || state !== cookieState) return finish("error");
 
   try {
-    await exchangeCodeForToken(code);
+    const userId = await currentUserId();
+    await exchangeCodeForToken(userId, code);
     return finish("connected");
   } catch {
     return finish("error");

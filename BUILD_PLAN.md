@@ -38,14 +38,22 @@ T-shirt size (S/M/L). "Gate" phases unblock revenue and should not be skipped.
 - **Docs:** CHANGELOG; CLAUDE (added `npm test`); OPEN_BUGS (tests/CI item
   closed). Done.
 
-### P1 · Accounts & multi-tenancy  · L · **Gate**
+### P1 · Accounts & multi-tenancy  · L · **Gate** · ✅ DONE (2026-06-23)
 - **Goal:** real users with isolated data — prerequisite for anything paid.
-- **Build:** email + OAuth sign-in, sessions; add a `userId` to every stored
-  item / audit row / key reference; scope every query by user.
-- **Test:** unit tests proving no cross-tenant read; auth flow integration test.
-- **Docs:** ARCHITECTURE (data model + tenancy), PROJECT, CHANGELOG.
-- **Done-when:** two accounts cannot see each other's items; pipeline/forget/
-  audit all user-scoped.
+- **Built:** **Auth.js / NextAuth v5** (Google provider, Prisma adapter,
+  database sessions) in `src/auth.ts`; a `/signin` page and an auth-gated
+  `(app)` layout. Added `userId` to `DerivedItem` / `AuditEvent` / `Setting`
+  (composite uniqueness `[userId, sourceId]`) and threaded it through pipeline,
+  inbox, forget engine, audit, settings, search, and per-user Gmail tokens.
+  `currentUserId()` is the single tenancy chokepoint; routes use
+  `requireUserId()` (401 when unauthenticated). **Demo fallback:** unset
+  `AUTH_*` → single-user `demo-user`, so the public prototype keeps working.
+- **Tested:** a DB-backed isolation test drives the real pipeline for two
+  tenants over the same mailbox and proves they cannot see / search / forget
+  each other's items; `currentUserId` branch tests (demo / signed-in /
+  unauthenticated). 20 tests total green; `tsc` + `next build` clean.
+- **Docs:** ARCHITECTURE (data model + tenancy + auth/routes), PROJECT, CLAUDE,
+  README, CHANGELOG. Done.
 
 ### P2 · Real key management (KMS seam)  · L · **Gate**
 - **Goal:** the trust promise — keys live apart from the data.

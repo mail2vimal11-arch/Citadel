@@ -13,14 +13,14 @@ import { googleConnection } from "./googleAuth";
 //     sample           = always the synthetic demo data (free-tier preview)
 //     gmail            = always Gmail (errors if no account is connected)
 //
-// TODO(production): selection becomes per-user (each account brings its own
-// connected mailbox + plan), not a process-wide env var.
+// `userId` scopes the mailbox: each user has their own Gmail connection/token.
+// TODO(production): selection also becomes per-plan (free vs full), not just env.
 // ============================================================================
-export async function getEmailSource(): Promise<EmailSource> {
+export async function getEmailSource(userId: string): Promise<EmailSource> {
   const mode = (process.env.EMAIL_SOURCE ?? "auto").toLowerCase();
   if (mode === "sample") return new SampleDataSource();
-  if (mode === "gmail") return new GmailSource();
-  // auto: use Gmail only if an account is actually connected.
-  const conn = await googleConnection();
-  return conn.connected ? new GmailSource() : new SampleDataSource();
+  if (mode === "gmail") return new GmailSource(userId);
+  // auto: use Gmail only if this user has actually connected an account.
+  const conn = await googleConnection(userId);
+  return conn.connected ? new GmailSource(userId) : new SampleDataSource();
 }

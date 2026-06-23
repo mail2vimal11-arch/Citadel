@@ -25,8 +25,10 @@ const MAX_MESSAGES = Number(process.env.GMAIL_MAX_MESSAGES ?? "10");
 export class GmailSource implements EmailSource {
   readonly name = "Gmail (read-only, via Gmail API)";
 
+  constructor(private readonly userId: string) {}
+
   async listEmails(): Promise<RawEmail[]> {
-    const token = await getAccessToken();
+    const token = await getAccessToken(this.userId);
     const auth = { Authorization: `Bearer ${token}` };
 
     // 1) List recent message ids in the inbox.

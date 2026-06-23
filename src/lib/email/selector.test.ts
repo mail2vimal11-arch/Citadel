@@ -10,11 +10,11 @@ afterEach(() => {
 describe("getEmailSource selector", () => {
   it("returns the synthetic source for EMAIL_SOURCE=sample", async () => {
     process.env.EMAIL_SOURCE = "sample";
-    expect((await getEmailSource()).name).toMatch(/synthetic/i);
+    expect((await getEmailSource("u1")).name).toMatch(/synthetic/i);
   });
 
   it("returns the Gmail source for EMAIL_SOURCE=gmail", async () => {
     process.env.EMAIL_SOURCE = "gmail";
-    expect((await getEmailSource()).name).toMatch(/gmail/i);
+    expect((await getEmailSource("u1")).name).toMatch(/gmail/i);
   });
 });

@@ -68,12 +68,17 @@ Milestones 1–6 complete. Real Apertus runs locally; real **read-only Gmail**
 ingestion shipped (Gmail API + OAuth). **Dark Superhuman-style UI** + a marketing
 landing at `/` (app at `/inbox`, via an `(app)` route group). **Live at
 `https://citadel.aletheos.tech`** — Docker container behind the host's existing
-Traefik proxy (auto HTTPS). Routes: `/` = landing, `/inbox` `/settings` `/audit`
-= app, `/api/auth/google*` = Gmail OAuth. Work lives on branch
+Traefik proxy (auto HTTPS). Routes: `/` = landing, `/signin` = Google sign-in,
+`/inbox` `/settings` `/audit` = app, `/api/auth/[...nextauth]` = Auth.js,
+`/api/auth/google*` = Gmail OAuth. Work lives on branch
 `claude/sovereign-inbox-prototype-o03qrz` (PR #3). Next work is sequenced
 feature-by-feature in `BUILD_PLAN.md` (each phase tested + documented);
-Superhuman feature map in `COMPETITIVE.md`. See also `CHANGELOG.md`,
-`ROADMAP.md`, and `OPEN_BUGS.md`.
+Superhuman feature map in `COMPETITIVE.md`. **BUILD_PLAN P0 (test harness) and
+P1 (accounts & multi-tenancy) are done:** Auth.js/NextAuth v5 sign-in + a
+`userId` on every stored row, every query user-scoped (`currentUserId()` is the
+chokepoint), with a `demo-user` fallback when `AUTH_*` is unset so the public
+demo still runs login-free. See also `CHANGELOG.md`, `ROADMAP.md`, and
+`OPEN_BUGS.md`.
 
 ## Gotchas (learned the hard way)
 - Apertus needs its **chat template** applied or it rambles (math) / replies in

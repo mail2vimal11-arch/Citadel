@@ -23,19 +23,19 @@ export function computeForgetAt(
   return new Date(processedAt.getTime() + ms);
 }
 
-export async function getForgetInterval(): Promise<ForgetInterval> {
+export async function getForgetInterval(userId: string): Promise<ForgetInterval> {
   const setting = await prisma.setting.upsert({
-    where: { id: 1 },
+    where: { userId },
     update: {},
-    create: { id: 1, forgetInterval: "24h" },
+    create: { userId, forgetInterval: "24h" },
   });
   return setting.forgetInterval as ForgetInterval;
 }
 
-export async function setForgetInterval(interval: ForgetInterval): Promise<void> {
+export async function setForgetInterval(userId: string, interval: ForgetInterval): Promise<void> {
   await prisma.setting.upsert({
-    where: { id: 1 },
+    where: { userId },
     update: { forgetInterval: interval },
-    create: { id: 1, forgetInterval: interval },
+    create: { userId, forgetInterval: interval },
   });
 }

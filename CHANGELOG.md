@@ -7,6 +7,19 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **P1 — Accounts & multi-tenancy (BUILD_PLAN):** introduced real sign-in and
+  per-user data isolation with **Auth.js / NextAuth v5** (Google provider,
+  Prisma adapter, database sessions). Every stored row now carries a `userId`
+  (`DerivedItem`, `AuditEvent`, `Setting`) and **every query is scoped by user** —
+  pipeline, inbox, forget sweep, audit, settings, search, and per-user Gmail
+  OAuth tokens. `currentUserId()` is the single tenancy chokepoint; API routes
+  resolve it via `requireUserId()` (401 when unauthenticated). Added a `/signin`
+  page and gated the `(app)` layout. **Demo mode preserved:** when `AUTH_SECRET`
+  /`AUTH_GOOGLE_*` are unset the app runs single-user (no login) so the public
+  prototype stays open. New tests prove **two accounts cannot see, search, or
+  forget each other's items** (real pipeline over the same mailbox), plus the
+  `currentUserId` branches — 20 tests total, all green. Added a DB-backed test
+  harness (`vitest.globalSetup.ts` provisions a throwaway `prisma/test.db`).
 - **P0 — Test harness (BUILD_PLAN):** added **Vitest** with a `test` script and
   `npm test` wired into CI (typecheck → test → build). Extracted Gmail MIME
   parsing into `src/lib/email/gmailParse.ts` (testable without network). 14 seed

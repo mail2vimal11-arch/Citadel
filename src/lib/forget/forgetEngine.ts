@@ -15,7 +15,7 @@ import { recordAudit } from "@/lib/audit";
 // here as encrypted bytes, but no key exists to read it.")
 // ============================================================================
 
-async function forgetOne(itemId: string, keyId: string): Promise<void> {
+async function forgetOne(userId: string, itemId: string, keyId: string): Promise<void> {
   const vault = getKeyVault();
   // 1. Destroy the key first — this is the irreversible step.
   await vault.destroyKey(keyId);
@@ -26,6 +26,7 @@ async function forgetOne(itemId: string, keyId: string): Promise<void> {
   });
   // 3. Audit it (no content).
   await recordAudit({
+    userId,
     event: "FORGOTTEN",
     message:
       "Per-item key destroyed; derived data is now permanently unrecoverable.",
@@ -33,36 +34,36 @@ async function forgetOne(itemId: string, keyId: string): Promise<void> {
   });
 }
 
-// Sweep: forget every ACTIVE item whose forget deadline has passed.
+// Sweep: forget every ACTIVE item (for this user) whose deadline has passed.
 // Safe to call often (e.g. on every page load / API request) — it's a no-op
 // when nothing has expired.
-export async function runForgetSweep(now: Date = new Date()): Promise<number> {
+export async function runForgetSweep(userId: string, now: Date = new Date()): Promise<number> {
   const due = await prisma.derivedItem.findMany({
-    where: { status: "ACTIVE", forgetAt: { not: null, lte: now } },
+    where: { userId, status: "ACTIVE", forgetAt: { not: null, lte: now } },
     select: { id: true, keyId: true },
   });
   for (const item of due) {
-    await forgetOne(item.id, item.keyId);
+    await forgetOne(userId, item.id, item.keyId);
   }
   return due.length;
 }
 
 // Forget a single item right now (the "Forget now" button in the demo).
-export async function forgetItemNow(itemId: string): Promise<boolean> {
-  const item = await prisma.derivedItem.findUnique({ where: { id: itemId } });
+export async function forgetItemNow(userId: string, itemId: string): Promise<boolean> {
+  const item = await prisma.derivedItem.findFirst({ where: { id: itemId, userId } });
   if (!item || item.status !== "ACTIVE") return false;
-  await forgetOne(item.id, item.keyId);
+  await forgetOne(userId, item.id, item.keyId);
   return true;
 }
 
-// Forget everything still active (the "Log out & forget all" action).
-export async function forgetAll(): Promise<number> {
+// Forget everything still active for this user ("Log out & forget all").
+export async function forgetAll(userId: string): Promise<number> {
   const active = await prisma.derivedItem.findMany({
-    where: { status: "ACTIVE" },
+    where: { userId, status: "ACTIVE" },
     select: { id: true, keyId: true },
   });
   for (const item of active) {
-    await forgetOne(item.id, item.keyId);
+    await forgetOne(userId, item.id, item.keyId);
   }
   return active.length;
 }

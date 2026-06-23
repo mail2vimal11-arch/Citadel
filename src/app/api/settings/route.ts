@@ -7,19 +7,24 @@ import {
   setForgetInterval,
 } from "@/lib/settings";
 import { recordAudit } from "@/lib/audit";
+import { requireUserId } from "@/lib/apiUser";
 import type { ForgetInterval } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 // GET /api/settings — current forget interval + the available options.
 export async function GET() {
-  const forgetInterval = await getForgetInterval();
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
+  const forgetInterval = await getForgetInterval(userId);
   return NextResponse.json({ forgetInterval, options: FORGET_OPTIONS });
 }
 
 // POST /api/settings { forgetInterval } — change the schedule and recompute the
 // forget deadline for every ACTIVE item based on its original processed time.
 export async function POST(req: Request) {
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
   const body = await req.json().catch(() => ({}));
   const interval = body?.forgetInterval as ForgetInterval | undefined;
 
@@ -28,11 +33,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Invalid forgetInterval" }, { status: 400 });
   }
 
-  await setForgetInterval(interval);
+  await setForgetInterval(userId, interval);
 
-  // Recompute deadlines for active items so the new schedule applies to them.
+  // Recompute deadlines for this user's active items so the new schedule applies.
   const active = await prisma.derivedItem.findMany({
-    where: { status: "ACTIVE" },
+    where: { userId, status: "ACTIVE" },
     select: { id: true, processedAt: true },
   });
   for (const item of active) {
@@ -43,6 +48,7 @@ export async function POST(req: Request) {
   }
 
   await recordAudit({
+    userId,
     event: "SETTINGS_CHANGED",
     message: `Forget schedule changed to "${interval}". Applied to ${active.length} active item(s).`,
   });

@@ -42,32 +42,34 @@ type StoredToken = {
 };
 
 const TOKEN_DIR = path.join(process.cwd(), ".citadel-secrets");
-const TOKEN_FILE = path.join(TOKEN_DIR, "google-token.json");
+// Tokens are stored PER USER so tenants never share a Gmail connection.
+const tokenFile = (userId: string) =>
+  path.join(TOKEN_DIR, `google-${userId.replace(/[^a-zA-Z0-9_-]/g, "_")}.json`);
 
-async function readToken(): Promise<StoredToken | null> {
+async function readToken(userId: string): Promise<StoredToken | null> {
   try {
-    return JSON.parse(await fs.readFile(TOKEN_FILE, "utf8")) as StoredToken;
+    return JSON.parse(await fs.readFile(tokenFile(userId), "utf8")) as StoredToken;
   } catch {
     return null;
   }
 }
 
-async function writeToken(tok: StoredToken): Promise<void> {
+async function writeToken(userId: string, tok: StoredToken): Promise<void> {
   await fs.mkdir(TOKEN_DIR, { recursive: true });
   // Owner read/write only.
-  await fs.writeFile(TOKEN_FILE, JSON.stringify(tok, null, 2), { mode: 0o600 });
+  await fs.writeFile(tokenFile(userId), JSON.stringify(tok, null, 2), { mode: 0o600 });
 }
 
-export async function clearGoogleToken(): Promise<void> {
+export async function clearGoogleToken(userId: string): Promise<void> {
   try {
-    await fs.unlink(TOKEN_FILE);
+    await fs.unlink(tokenFile(userId));
   } catch {
     /* already gone */
   }
 }
 
-export async function googleConnection(): Promise<{ connected: boolean; email?: string }> {
-  const tok = await readToken();
+export async function googleConnection(userId: string): Promise<{ connected: boolean; email?: string }> {
+  const tok = await readToken(userId);
   if (!tok?.refreshToken) return { connected: false };
   return { connected: true, email: tok.email };
 }
@@ -92,7 +94,7 @@ export function buildConsentUrl(state: string): string {
 }
 
 // ---- code exchange + refresh ------------------------------------------------
-export async function exchangeCodeForToken(code: string): Promise<void> {
+export async function exchangeCodeForToken(userId: string, code: string): Promise<void> {
   const res = await fetch(TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -119,10 +121,10 @@ export async function exchangeCodeForToken(code: string): Promise<void> {
     expiresAt: Date.now() + data.expires_in * 1000,
     email: await fetchEmail(data.access_token).catch(() => undefined),
   };
-  await writeToken(tok);
+  await writeToken(userId, tok);
 }
 
-async function refreshAccessToken(tok: StoredToken): Promise<string> {
+async function refreshAccessToken(userId: string, tok: StoredToken): Promise<string> {
   const res = await fetch(TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -135,7 +137,7 @@ async function refreshAccessToken(tok: StoredToken): Promise<string> {
   });
   if (!res.ok) throw new Error(`Google token refresh failed (${res.status})`);
   const data = (await res.json()) as { access_token: string; expires_in: number };
-  await writeToken({
+  await writeToken(userId, {
     ...tok,
     accessToken: data.access_token,
     expiresAt: Date.now() + data.expires_in * 1000,
@@ -144,14 +146,14 @@ async function refreshAccessToken(tok: StoredToken): Promise<string> {
 }
 
 // Returns a valid access token, refreshing if needed. Throws if not connected.
-export async function getAccessToken(): Promise<string> {
-  const tok = await readToken();
+export async function getAccessToken(userId: string): Promise<string> {
+  const tok = await readToken(userId);
   if (!tok?.refreshToken) throw new Error("Gmail is not connected.");
   // Reuse the cached access token if it has >60s of life left.
   if (tok.accessToken && tok.expiresAt && tok.expiresAt - Date.now() > 60_000) {
     return tok.accessToken;
   }
-  return refreshAccessToken(tok);
+  return refreshAccessToken(userId, tok);
 }
 
 async function fetchEmail(accessToken: string): Promise<string | undefined> {

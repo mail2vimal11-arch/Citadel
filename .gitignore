@@ -30,6 +30,10 @@ next-env.d.ts
 /prisma/dev.db
 /prisma/dev.db-journal
 
+# Throwaway SQLite DB created by the test suite (vitest.globalSetup.ts)
+/prisma/test.db
+/prisma/test.db-journal
+
 # OAuth tokens — the prototype stores the Gmail refresh token here locally.
 # NEVER commit this. TODO(production): real per-user secrets manager instead.
 /.citadel-secrets/

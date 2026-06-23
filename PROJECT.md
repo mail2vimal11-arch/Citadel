@@ -59,6 +59,10 @@ interfaces and marked `// TODO(production):`.
 6. **Inbox UI**, settings panel for the schedule, semantic search box — plus a
    **marketing landing page** (`/`) in a dark, Superhuman-style design; the app
    lives at `/inbox`.
+7. **Accounts & multi-tenancy** — Google sign-in (Auth.js / NextAuth v5) with a
+   `userId` on every stored item, audit row, setting, and Gmail token, and every
+   query scoped per user so accounts can't see each other's data. Falls back to a
+   single-user demo (no login) when auth env is unset, keeping the public demo open.
 
 ### Explicitly out of scope (production seams)
 Real OAuth mailbox connectors · Apertus served on Canadian infra · real HSM/KMS ·

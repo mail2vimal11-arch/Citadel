@@ -25,9 +25,9 @@ export interface SearchResult {
 // Everything here is IN-MEMORY ONLY. We decrypt active summaries just long
 // enough to embed them and never persist the vectors — so search adds nothing
 // new to forget/shred. Forgotten items have no content and are never searched.
-export async function searchInbox(query: string): Promise<SearchResult> {
+export async function searchInbox(userId: string, query: string): Promise<SearchResult> {
   const q = query.trim();
-  const active = (await loadInbox()).filter(
+  const active = (await loadInbox(userId)).filter(
     (i): i is InboxItem => i.status === "ACTIVE"
   );
 

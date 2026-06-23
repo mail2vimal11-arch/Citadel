@@ -31,13 +31,33 @@ infrastructure — no API keys or cloud endpoints exist anywhere in the app.
 
 ## Routes & layout
 - `/` — marketing landing (`src/app/page.tsx`), bare root layout, no app nav.
+- `/signin` — Google sign-in (`src/app/signin/page.tsx`); only shown when auth
+  is configured, otherwise it redirects straight to `/inbox` (demo mode).
 - `/inbox`, `/settings`, `/audit` — the app, under the `(app)` route group
-  (`src/app/(app)/layout.tsx` adds the shared `Nav`). The route group keeps the
-  app chrome off the landing without changing URLs.
+  (`src/app/(app)/layout.tsx` adds the shared `Nav` and, when auth is
+  configured, redirects unauthenticated visitors to `/signin`). The route group
+  keeps the app chrome off the landing without changing URLs.
 - `/api/...` — server routes (process, items, forget, settings, audit, reset,
-  search, and `auth/google[/callback|/status]` for the Gmail OAuth flow).
+  search, `auth/google[/callback|/status]` for the Gmail OAuth flow, and
+  `auth/[...nextauth]` for the Auth.js session handlers). Each data route
+  resolves the caller with `requireUserId()` (`src/lib/apiUser.ts`) and scopes
+  every query to that user; it returns 401 when auth is on and there's no session.
 - `EMAIL_SOURCE` (`auto|sample|gmail`) and `APP_BASE_URL` (public origin, for
   correct OAuth redirects behind a reverse proxy) are the relevant env knobs.
+
+### Authentication & multi-tenancy (Auth.js / NextAuth v5)
+- **Sign-in** is `src/auth.ts`: NextAuth v5 with the Google provider, the Prisma
+  adapter, and **database** sessions. `authConfigured()` is true only when
+  `AUTH_SECRET`, `AUTH_GOOGLE_ID`, and `AUTH_GOOGLE_SECRET` are all set.
+- **Tenancy chokepoint** is `src/lib/currentUser.ts` → `currentUserId()`: returns
+  the signed-in user's id, or — when auth is **not** configured — a fixed
+  `demo-user` so the public prototype runs single-user with no login.
+  `// TODO(production):` remove the demo fallback and require a real session.
+- **Isolation rule:** `userId` is stored on `DerivedItem`, `AuditEvent`, and
+  `Setting`, and **every** read/write is filtered by it (pipeline, inbox, forget
+  sweep, audit, settings, search). Per-user Gmail tokens are keyed by `userId`
+  too (`googleAuth.ts`). The DB-backed test `src/lib/tenancy.test.ts` proves two
+  accounts over the same mailbox can't see / search / forget each other's items.
 
 ---
 
@@ -116,9 +136,16 @@ per item; destroying it makes that item unrecoverable.
 
 - `DerivedItem` — encrypted derived payload + `forgetAt`/`forgottenAt`/`status`.
   Sensitive fields exist **only inside the ciphertext**, never as clear columns.
+  Carries `userId`; unique per `[userId, sourceId]` so each tenant ingests the
+  same source mailbox independently.
 - `VaultKey` — per-item key material; `destroyed` flag + nulled material = shred.
 - `AuditEvent` — `PROCESSED` / `FORGOTTEN` / `SETTINGS_CHANGED`, content-free.
-- `Setting` — single-row forget interval.
+  Carries `userId`; indexed by `[userId, createdAt]`.
+- `Setting` — per-user forget interval (`userId` is the primary key).
+- **Auth.js tables** — `User`, `Account`, `Session`, `VerificationToken` (the
+  standard `@auth/prisma-adapter` schema). `userId` columns above are plain
+  string scopes — not FKs to `User` — so the demo `demo-user` works without a
+  row, and tenancy is enforced by query scoping rather than referential joins.
 
 ## How "forget" works (and why it's irreversible)
 

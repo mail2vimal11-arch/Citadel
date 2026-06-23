@@ -22,10 +22,15 @@ datasource db {
 // A single AI-derived record for one source email.
 // The sensitive fields (sender, subject, summary, draft, etc.) live ONLY inside
 // the encrypted `ciphertext` blob — never in their own clear columns.
+//
+// `userId` scopes every item to its owner (multi-tenancy). It is a plain column
+// (no FK to User) so the demo single-user fallback works without a User row.
 model DerivedItem {
   id          String    @id @default(cuid())
-  // Stable id of the originating (synthetic) email, used to avoid double-processing.
-  sourceId    String    @unique
+  userId      String
+  // Stable id of the originating email, used to avoid double-processing.
+  // Unique PER USER (two users can hold the same synthetic sourceId).
+  sourceId    String
   status      String    @default("ACTIVE") // ACTIVE | FORGOTTEN
   processedAt DateTime  @default(now())
   // When this item is scheduled to be forgotten. Null means "only on logout".
@@ -40,7 +45,8 @@ model DerivedItem {
   // The per-item key lives in the KeyVault. Destroying it shreds this item.
   keyId       String
 
-  @@index([status])
+  @@unique([userId, sourceId])
+  @@index([userId, status])
 }
 
 // Demo key vault. Each derived item gets its own key. "Destroying" a key nulls
@@ -60,20 +66,69 @@ model VaultKey {
 }
 
 // Append-only audit trail. Records THAT something happened and WHEN — never the
-// forgotten content itself.
+// forgotten content itself. Scoped per user.
 model AuditEvent {
   id        String   @id @default(cuid())
+  userId    String
   itemId    String?
   sourceRef String? // a non-sensitive reference label, safe to keep after forget
   event     String // PROCESSED | FORGOTTEN | SETTINGS_CHANGED
   message   String // human-readable, non-sensitive
   createdAt DateTime @default(now())
 
-  @@index([createdAt])
+  @@index([userId, createdAt])
 }
 
-// Single-row settings table for the forget schedule.
+// Per-user settings (the forget schedule). Keyed by userId.
 model Setting {
-  id             Int    @id @default(1)
+  userId         String @id
   forgetInterval String @default("24h") // "1h" | "24h" | "7d" | "logout"
+}
+
+// --------------------------------------------------------------------------
+// Auth.js (NextAuth) models — accounts, OAuth links, and sessions.
+// Standard schema required by @auth/prisma-adapter (database sessions).
+// --------------------------------------------------------------------------
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
