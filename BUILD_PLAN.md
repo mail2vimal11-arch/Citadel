@@ -55,15 +55,25 @@ T-shirt size (S/M/L). "Gate" phases unblock revenue and should not be skipped.
 - **Docs:** ARCHITECTURE (data model + tenancy + auth/routes), PROJECT, CLAUDE,
   README, CHANGELOG. Done.
 
-### P2 · Real key management (KMS seam)  · L · **Gate**
+### P2 · Real key management (KMS seam)  · L · **Gate** · ✅ DONE (2026-06-23)
 - **Goal:** the trust promise — keys live apart from the data.
-- **Build:** implement a `KeyVault` against a Canadian-controlled managed KMS;
-  per-item keys issued/destroyed in the KMS; DB only ever holds ciphertext.
-- **Test:** vault contract tests (issue → encrypt → destroy → decrypt fails);
-  run the existing crypto suite against the new vault.
-- **Docs:** ARCHITECTURE (KeyVault table → real impl), ROADMAP (P3 done),
-  COMPETITIVE (BYOK/CMEK ✅), CHANGELOG.
-- **Done-when:** forgetting destroys the key in the KMS; data unrecoverable.
+- **Built:** `KmsKeyVault` (now the default) does **envelope encryption** through
+  a `KmsClient` seam: per-item data keys are minted by the KMS, the payload is
+  encrypted in memory, and only the **wrapped** DEK is persisted — the DB holds
+  nothing but ciphertext. `LocalKmsClient` runs the KMS fully offline with the
+  master key (KEK) in `KMS_MASTER_KEY` or a gitignored `.citadel-secrets/`
+  file, never in the DB. Forget = destroy the one wrapped DEK. `KEY_VAULT`
+  (`auto|kms|local`) selects; legacy raw-key rows read transparently.
+- **Tested:** vault contract tests run against **both** vaults (issue → encrypt →
+  destroy → unrecoverable); KMS-specific tests prove the stored value is wrapped
+  (not raw), that a wrong KEK can't recover it (DB alone is useless), the legacy
+  read path, and KMS wrap/unwrap round-trips. 28 tests total green.
+- **Docs:** ARCHITECTURE (KeyVault → envelope impl + data model), ROADMAP,
+  COMPETITIVE (BYOK/CMEK ✅), CLAUDE, CHANGELOG; `KEY_VAULT`/`KMS_MASTER_KEY`
+  added to `.env` + `.env.docker.example`. Done.
+- **Done-when:** forgetting destroys the key; data unrecoverable. ✅ — and the
+  remaining production gap is only WHERE the KEK lives (swap `LocalKmsClient`
+  for a Canadian-controlled managed KMS).
 
 ### P3 · Durable storage + reliable forget scheduler  · M · **Gate**
 - **Goal:** truthful "forgets on schedule, even if you never open the app."

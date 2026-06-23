@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { encrypt } from "@/lib/crypto";
-import { getKeyVault } from "@/lib/keyvault/LocalKeyVault";
+import { getKeyVault } from "@/lib/keyvault";
 import { resolveAIProvider } from "@/lib/ai";
 import { getEmailSource } from "@/lib/email";
 import type { EmailSource } from "@/lib/email/EmailSource";

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { getKeyVault } from "@/lib/keyvault/LocalKeyVault";
+import { getKeyVault } from "@/lib/keyvault";
 import { recordAudit } from "@/lib/audit";
 
 // ============================================================================

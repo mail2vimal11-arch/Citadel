@@ -48,14 +48,20 @@ lines to change for production.
 - `src/lib/embeddings/EmbeddingProvider.ts` → `LocalEmbeddingProvider`
   (`nomic-embed-text`). Powers in-memory semantic search (`src/lib/search.ts`,
   `/api/search`); vectors are never persisted.
-- `src/lib/keyvault/KeyVault.ts` → `LocalKeyVault` (DEMO ONLY, insecure — keys live
-  beside data). Crypto in `src/lib/crypto.ts` (AES-256-GCM).
+- `src/lib/keyvault/KeyVault.ts` → `KmsKeyVault` (default; envelope encryption, DB
+  holds only ciphertext) · `LocalKeyVault` (`KEY_VAULT=local`, DEMO — keys beside
+  data). Selected in `src/lib/keyvault/index.ts`. The KMS itself is a seam
+  (`src/lib/keyvault/kms/KmsClient.ts` → `LocalKmsClient`, KEK in
+  `KMS_MASTER_KEY`/`.citadel-secrets/`). Crypto in `src/lib/crypto.ts` (AES-256-GCM).
 - Pipeline `src/lib/pipeline.ts`; forget engine `src/lib/forget/forgetEngine.ts`
   (lazy sweep on read); audit `src/lib/audit.ts`; settings `src/lib/settings.ts`.
 
 ## Env vars (`.env`)
 `DATABASE_URL` · `AI_PROVIDER` · `OLLAMA_BASE_URL` · `OLLAMA_MODEL` ·
-`OLLAMA_EMBED_MODEL`. The committed `.env` defaults to `AI_PROVIDER="auto"`.
+`OLLAMA_EMBED_MODEL` · `KEY_VAULT` (`auto`|`kms`|`local`) · `KMS_MASTER_KEY`
+(base64 KEK; blank → auto-provisioned local file) · `AUTH_SECRET` /
+`AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` (blank → demo mode, no login). The
+committed `.env` defaults to `AI_PROVIDER="auto"`.
 
 ## Conventions
 - Match the heavy, plain-language comment style already in `src/lib/**`.
@@ -73,12 +79,14 @@ Traefik proxy (auto HTTPS). Routes: `/` = landing, `/signin` = Google sign-in,
 `/api/auth/google*` = Gmail OAuth. Work lives on branch
 `claude/sovereign-inbox-prototype-o03qrz` (PR #3). Next work is sequenced
 feature-by-feature in `BUILD_PLAN.md` (each phase tested + documented);
-Superhuman feature map in `COMPETITIVE.md`. **BUILD_PLAN P0 (test harness) and
-P1 (accounts & multi-tenancy) are done:** Auth.js/NextAuth v5 sign-in + a
-`userId` on every stored row, every query user-scoped (`currentUserId()` is the
-chokepoint), with a `demo-user` fallback when `AUTH_*` is unset so the public
-demo still runs login-free. See also `CHANGELOG.md`, `ROADMAP.md`, and
-`OPEN_BUGS.md`.
+Superhuman feature map in `COMPETITIVE.md`. **BUILD_PLAN P0 (test harness),
+P1 (accounts & multi-tenancy), and P2 (KMS seam) are done:** Auth.js/NextAuth v5
+sign-in + a `userId` on every stored row, every query user-scoped
+(`currentUserId()` is the chokepoint), with a `demo-user` fallback when `AUTH_*`
+is unset; and a default `KmsKeyVault` doing **envelope encryption** (per-item
+DEKs wrapped under a KEK that lives outside the DB, so the DB holds only
+ciphertext). Next is **P3 (durable Postgres + scheduled forget worker)**. See
+also `CHANGELOG.md`, `ROADMAP.md`, and `OPEN_BUGS.md`.
 
 ## Gotchas (learned the hard way)
 - Apertus needs its **chat template** applied or it rambles (math) / replies in

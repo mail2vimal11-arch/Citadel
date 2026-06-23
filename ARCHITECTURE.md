@@ -109,12 +109,26 @@ degrades to keyword match when Ollama embeddings are unavailable).
 
 ### 4. `KeyVault` — `src/lib/keyvault/KeyVault.ts`
 `issueKey()`, `getKey()`, `destroyKey()`. The "crypto-shredding" engine: one key
-per item; destroying it makes that item unrecoverable.
+per item; destroying it makes that item unrecoverable. Selected by
+`getKeyVault()` (`src/lib/keyvault/index.ts`) via the `KEY_VAULT` env var.
 
 | Implementation | File | Status |
 |---|---|---|
-| `LocalKeyVault` | `src/lib/keyvault/LocalKeyVault.ts` | ✅ demo only — **insecure** (keys stored beside data) |
-| Canadian HSM/KMS | — | 🚧 `TODO(production)` |
+| `KmsKeyVault` (default) | `src/lib/keyvault/KmsKeyVault.ts` | ✅ **envelope encryption** — keys live apart from data; DB holds only ciphertext |
+| `LocalKeyVault` (`KEY_VAULT=local`) | `src/lib/keyvault/LocalKeyVault.ts` | demo only — **insecure** (raw keys beside data); kept for contrast |
+| Canadian HSM/KMS | `src/lib/keyvault/kms/KmsClient.ts` (seam) | 🚧 `TODO(production)` — repoint `LocalKmsClient` at a managed KMS |
+
+**Envelope encryption (the P2 model).** `KmsKeyVault` never stores raw keys. It
+asks the KMS seam (`KmsClient`) for a per-item **data key (DEK)**: the KMS returns
+the DEK in the clear (used in memory to encrypt the payload) plus a **wrapped**
+copy (the DEK encrypted under the KMS **master key / KEK**). Only the wrapped DEK
+is persisted, so the database holds nothing but ciphertext. `LocalKmsClient`
+implements the KMS fully offline, with the KEK in `KMS_MASTER_KEY` (base64) or an
+auto-provisioned `.citadel-secrets/kms-master.key` (gitignored, mode 0600) —
+**never** in the DB. To **forget**, we destroy the item's one wrapped DEK; since
+the plaintext DEK was never written down, the item is unrecoverable even to
+someone holding both the database *and* the KEK. Legacy raw-key rows from the old
+vault are read transparently so upgrading never loses data.
 
 ---
 
@@ -138,7 +152,9 @@ per item; destroying it makes that item unrecoverable.
   Sensitive fields exist **only inside the ciphertext**, never as clear columns.
   Carries `userId`; unique per `[userId, sourceId]` so each tenant ingests the
   same source mailbox independently.
-- `VaultKey` — per-item key material; `destroyed` flag + nulled material = shred.
+- `VaultKey` — per-item key record. Under the default `KmsKeyVault`, `material`
+  is the **wrapped** DEK (ciphertext, useless without the KEK); under the demo
+  vault it's a raw base64 key. `destroyed` flag + nulled material = shred.
 - `AuditEvent` — `PROCESSED` / `FORGOTTEN` / `SETTINGS_CHANGED`, content-free.
   Carries `userId`; indexed by `[userId, createdAt]`.
 - `Setting` — per-user forget interval (`userId` is the primary key).

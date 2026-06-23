@@ -18,11 +18,14 @@ genuinely real before we take a dollar:
 
 1. **Real mailbox ingestion** — without it there is no product, only a demo.
 2. **Real key custody** — we cannot charge for "provable, irreversible forgetting"
-   while the encryption keys live in the same database as the data they protect
-   (today's `LocalKeyVault`). Crypto-shredding is *functionally* real even now
-   (destroy the key → data is unrecoverable), but "keys beside data" means a single
-   database breach exposes everything. That has to move to a separate, Canadian
-   key-management service before we custody anyone's real email.
+   while the encryption keys live in the same database as the data they protect.
+   This is now **architecturally solved** (BUILD_PLAN P2): the default
+   `KmsKeyVault` does envelope encryption — per-item keys are wrapped under a
+   master key (KEK) that lives OUTSIDE the database, so the DB holds only
+   ciphertext and a single database breach exposes nothing. The remaining
+   production step is purely *where the KEK lives*: swap the offline
+   `LocalKmsClient` for a Canadian-controlled managed KMS / HSM before we
+   custody anyone's real email.
 
 Everything else (hosting speed, compliance paperwork, polish) is important but
 sequenceable around those two.
@@ -65,10 +68,13 @@ You cannot have paying users without logins and hard per-user data isolation.
 - Each user's items, keys, audit log fully partitioned; no cross-tenant reads.
 - **Effort:** L · **Blocks revenue:** yes · **Infra:** an auth provider or self-hosted.
 
-### Phase 3 — Real key management (the trust gate)
-Replace the demo `LocalKeyVault` with a **Canadian-controlled HSM/KMS**.
+### Phase 3 — Real key management (the trust gate) · seam shipped (BUILD_PLAN P2)
+The **envelope-encryption seam is built**: the default `KmsKeyVault` keeps keys
+apart from data (DB holds only ciphertext). What remains is repointing the
+`KmsClient` seam from the offline `LocalKmsClient` at a **Canadian-controlled
+HSM/KMS**.
 - Per-item keys generated/stored/destroyed in the KMS, separate from the data store.
-- "Forget" = the KMS destroys the key; the DB only ever held ciphertext.
+- "Forget" = destroy the wrapped per-item key; the DB only ever held ciphertext.
 - **Effort:** L · **Blocks revenue:** **yes — the core promise** · **Infra:** managed
   KMS in a Canadian region, or an on-prem HSM.
 

@@ -49,17 +49,19 @@ model DerivedItem {
   @@index([userId, status])
 }
 
-// Demo key vault. Each derived item gets its own key. "Destroying" a key nulls
-// the material and flips `destroyed`, which is what makes a forget irreversible.
+// Per-item key record. Each derived item gets its own key; "destroying" it nulls
+// `material` and flips `destroyed`, which is what makes a forget irreversible.
 //
-// WARNING: storing key material in the same SQLite file as the ciphertext is
-// NOT secure and is for demonstration only.
-// TODO(production): replace with a Canadian-controlled HSM/KMS. Keys must never
-// live next to the data they protect, and destruction must be a hardware-backed,
-// auditable operation.
+// Under the default KmsKeyVault, `material` holds the WRAPPED data key (the key
+// encrypted under the KMS master key) — i.e. ciphertext, never a usable key. The
+// master key lives OUTSIDE this database, so the DB alone reveals nothing.
+// Under the demo LocalKeyVault (KEY_VAULT=local) `material` holds a raw base64
+// key beside the data — insecure, kept only to demonstrate the lifecycle.
+// TODO(production): the KMS master key comes from a Canadian-controlled HSM/KMS;
+// destruction is a hardware-backed, auditable operation.
 model VaultKey {
   id          String    @id @default(cuid())
-  material    String? // base64 key bytes; null after destruction
+  material    String? // wrapped DEK (KMS) or raw base64 key (demo); null after destruction
   destroyed   Boolean   @default(false)
   createdAt   DateTime  @default(now())
   destroyedAt DateTime?

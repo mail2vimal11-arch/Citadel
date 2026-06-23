@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { getKeyVault } from "@/lib/keyvault/LocalKeyVault";
+import { getKeyVault } from "@/lib/keyvault";
 import { decrypt } from "@/lib/crypto";
 import type { AnyInboxItem, DerivedPayload } from "@/lib/types";
 

@@ -7,6 +7,22 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **P2 — Real key management / KMS seam (BUILD_PLAN):** keys now live **apart
+  from the data**. New default `KmsKeyVault` does **envelope encryption** through
+  a `KmsClient` seam: a per-item data key (DEK) is minted by the KMS, used
+  in-memory to encrypt the payload, and only the **wrapped** DEK (encrypted under
+  the KMS master key) is stored — so the database holds nothing but ciphertext.
+  `LocalKmsClient` runs the KMS fully offline with the master key (KEK) in
+  `KMS_MASTER_KEY` or an auto-provisioned, gitignored `.citadel-secrets/`
+  file (mode 0600) — never in the DB. Forgetting destroys the one wrapped DEK,
+  so an item is unrecoverable even to someone holding both the DB and the KEK.
+  `KEY_VAULT` (`auto|kms|local`) selects the vault; the old `LocalKeyVault`
+  (raw keys beside data) remains under `KEY_VAULT=local` for contrast. Legacy
+  raw-key rows are read transparently, so the upgrade loses no existing items.
+  Added vault contract tests across both vaults plus KMS-specific tests (stored
+  value is wrapped not raw; wrong KEK can't recover; legacy read; wrap/unwrap
+  round-trip) — 28 tests total, all green. The one remaining production gap is
+  WHERE the KEK lives (swap `LocalKmsClient` for a Canadian-controlled KMS).
 - **P1 — Accounts & multi-tenancy (BUILD_PLAN):** introduced real sign-in and
   per-user data isolation with **Auth.js / NextAuth v5** (Google provider,
   Prisma adapter, database sessions). Every stored row now carries a `userId`

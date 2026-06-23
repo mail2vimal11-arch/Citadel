@@ -92,7 +92,7 @@ rewrites, a separate grammar engine is redundant._
 ## Enterprise-only in Superhuman — **core in Citadel** 🆚
 | Superhuman (enterprise add-on) | Citadel |
 |---|---|
-| BYOK / CMEK encryption | ✅ per-item keys by design (KMS in BUILD_PLAN P3) |
+| BYOK / CMEK encryption | ✅ per-item keys via envelope encryption (KMS seam, BUILD_PLAN P2); keys live apart from data 🆚 |
 | Data Loss Prevention / sensitivity labels | 🔜 P16, but minimization is default |
 | Audit logging | ✅ content-free audit log today 🆚 |
 | Provable data deletion / retention | ✅ crypto-shredding + "prove unrecoverable" 🆚 |
