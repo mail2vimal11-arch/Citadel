@@ -7,6 +7,13 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **P10 — Calendar (BUILD_PLAN):** scheduling helpers for replies. **Propose
+  times** inserts suggested meeting slots into the Write-with-AI box, and **Add to
+  calendar** downloads an `.ics` event built from the message (create-event-from-
+  email). Availability is a pure, unit-tested module (`src/lib/availability.ts`):
+  free-slot computation around busy blocks, next-weekday proposals, and RFC-5545
+  VEVENT generation. It models an **open working day** for now — live free/busy
+  needs a Calendar scope (`// TODO(production):`). 7 new tests (123 total green).
 - **P9 — Snippets · Snooze / Remind-me (BUILD_PLAN):** **Snooze** an item until a
   chosen time (Later today / This evening / Tomorrow 9am / Next week) — it drops
   out of the inbox and **reappears when due**, with a "Snoozed (N)" toggle to peek;

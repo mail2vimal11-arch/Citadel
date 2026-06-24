@@ -118,8 +118,11 @@ returned), with an "Ask AI" box in the inbox. **P5.5 (multi-account mailbox)** i
 done: connect several Gmail/Microsoft accounts, merged into one inbox. **P9
 (snippets + snooze/remind)** done — pure scheduling in `src/lib/schedule.ts`,
 client-side snooze + Settings-managed snippets (Send Later deferred: read-only
-connectors). In progress: **P10–P11 (Stage D)**. Then **P12 (billing & freemium
-gating)** — though per ROADMAP, charging should wait until the
+connectors). **P10 (calendar)** done — pure `src/lib/availability.ts`
+(free-slots, propose-times, .ics), surfaced as "Propose times" + "Add to
+calendar" in the reading pane (open working-day model; live free/busy needs a
+Calendar scope). In progress: **P11 (keyboard + Cmd+K)**. Then **P12 (billing &
+freemium gating)** — though per ROADMAP, charging should wait until the
 Canadian-hosting + managed-KMS production gates are real. See also
 `CHANGELOG.md`, `ROADMAP.md`, and `OPEN_BUGS.md`.
 

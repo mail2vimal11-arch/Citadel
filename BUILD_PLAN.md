@@ -243,10 +243,17 @@ T-shirt size (S/M/L). "Gate" phases unblock revenue and should not be skipped.
   + `next build` clean.
 - **Docs:** BUILD_PLAN, COMPETITIVE, CHANGELOG, CLAUDE.
 
-### P10 · Calendar (optional)  · M
-- **Build:** See-Your-Day inline availability, create-event-from-email.
-- **Test:** availability-calc tests.
-- **Docs:** COMPETITIVE, CHANGELOG.
+### P10 · Calendar  · M · ✅ DONE (2026-06-24)
+- **Built:** pure availability (`src/lib/availability.ts`) — `freeSlots` (free
+  gaps around busy blocks), `proposeTimes` (next weekday slots), `formatSlot`,
+  and `buildIcs` (RFC 5545 VEVENT). Reading pane gains **Propose times** (inserts
+  free slots into the reply) and **Add to calendar** (.ics download = create
+  event from email). Models an **open working day** (no calendar scope yet).
+  `// TODO(production):` real free/busy via Google/Microsoft Calendar scopes.
+- **Tested:** 7 availability tests (free-window, split-around-busy, too-short
+  gaps, future weekday proposals, past-hour skip, ICS shape). 123 green; `tsc` +
+  `next build` clean.
+- **Docs:** BUILD_PLAN, COMPETITIVE, CHANGELOG, CLAUDE.
 
 ### P11 · Keyboard-first UX + Cmd+K  · M
 - **Build:** shortcut map, command palette, fast navigation.

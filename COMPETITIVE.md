@@ -63,9 +63,9 @@ rewrites, a separate grammar engine is redundant._
 ## Calendar
 | Superhuman feature | Tier | Citadel | Notes |
 |---|---|---|---|
-| See Your Day / inline availability | Starter | 🔜 | P12 (optional) |
-| Create Event from email | Starter | 🔜 | P12 |
-| Share Availability | Starter | 🔜 | P12 |
+| See Your Day / inline availability | Starter | 🟡 | open working-day model (P10); live free/busy needs a Calendar scope |
+| Create Event from email | Starter | ✅ | .ics download from a proposed slot (P10) |
+| Share Availability | Starter | ✅ | "Propose times" inserts free slots into a reply (P10) |
 
 ## Collaboration / team
 | Superhuman feature | Tier | Citadel | Notes |

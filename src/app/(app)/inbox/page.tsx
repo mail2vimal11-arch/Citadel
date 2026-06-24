@@ -15,6 +15,7 @@ import {
 } from "@/lib/inboxView";
 import { groupIntoLanes, parseVips } from "@/lib/lanes";
 import { isSnoozed, snoozeUntil, formatWake, SNOOZE_PRESETS, type SnoozePresetId } from "@/lib/schedule";
+import { proposeTimes, formatSlot, buildIcs } from "@/lib/availability";
 
 const PAGE_SIZE = 20;
 const DONE_KEY = "citadel:done";
@@ -843,6 +844,26 @@ function ReadingActive({
     setComposed(null);
   }, [item.id]);
 
+  // Calendar helpers (P10): suggest meeting times into the reply, or download an
+  // .ics event. Availability uses an open working-day model (no calendar scope).
+  const proposeMeeting = () => {
+    const slots = proposeTimes(new Date(), 3);
+    if (!slots.length) return;
+    const text = `I'm available: ${slots.map(formatSlot).join("; ")}.`;
+    setInstruction((cur) => (cur ? `${cur} ${text}` : text));
+  };
+  const addToCalendar = () => {
+    const slots = proposeTimes(new Date(), 1);
+    if (!slots.length) return;
+    const ics = buildIcs(`Meeting: ${p.subject}`, slots[0], new Date().toISOString());
+    const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "citadel-event.ics";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="reading">
       <div className="reading-head">
@@ -906,7 +927,12 @@ function ReadingActive({
           <button className="btn-primary btn-small" type="submit" disabled={composing || !instruction.trim()}>
             {composing ? "Drafting…" : "Draft with AI"}
           </button>
-          <span className="note" style={{ margin: 0 }}>Runs locally · uses your saved tone</span>
+          <button type="button" className="btn-secondary btn-small" onClick={proposeMeeting}>
+            Propose times
+          </button>
+          <button type="button" className="btn-secondary btn-small" onClick={addToCalendar}>
+            Add to calendar
+          </button>
         </div>
         {composed !== null && (
           <div className="draft" style={{ marginTop: 10 }}>
