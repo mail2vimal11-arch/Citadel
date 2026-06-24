@@ -229,11 +229,19 @@ T-shirt size (S/M/L). "Gate" phases unblock revenue and should not be skipped.
 
 ## Stage D — Productivity & polish
 
-### P9 · Snippets · Send Later · Reminders · Snooze  · M
-- **Build:** reusable snippets; scheduled send; follow-up reminders; snooze —
-  each as its own small, tested unit.
-- **Test:** scheduling/reminder unit tests.
-- **Docs:** PROJECT, COMPETITIVE, CHANGELOG.
+### P9 · Snippets · Send Later · Reminders · Snooze  · M · ✅ DONE (2026-06-24)
+- **Built:** pure scheduling primitives (`src/lib/schedule.ts`) — snooze presets
+  → wake times, `isSnoozed`/`formatWake`. **Snooze / remind-me**: hide an item
+  until its wake time (reappears when due), with a preset menu in the reading
+  pane and a "Snoozed (N)" toggle; client-side (localStorage), like done/VIPs.
+  **Snippets**: reusable templates managed in Settings, inserted as chips into the
+  Write-with-AI box. **Send Later** is deferred — actual transmission needs a
+  send-capable scope (connectors are read-only); the scheduling math it would use
+  is in place. `// TODO(production):` scheduled send + outbound queue.
+- **Tested:** 11 scheduling unit tests (each preset → future time, evening
+  roll-over, next-Monday, `isSnoozed` boundaries, `formatWake`). 116 green; `tsc`
+  + `next build` clean.
+- **Docs:** BUILD_PLAN, COMPETITIVE, CHANGELOG, CLAUDE.
 
 ### P10 · Calendar (optional)  · M
 - **Build:** See-Your-Day inline availability, create-event-from-email.

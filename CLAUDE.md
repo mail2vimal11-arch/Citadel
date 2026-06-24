@@ -115,9 +115,11 @@ priority/label + a client-side VIP sender list, with a Split toggle + VIP editor
 in the inbox. **P8 (Ask AI)** is done: `POST /api/ask` does local RAG (retrieval
 via `searchInbox`, grounded `answer()` over derived fields only, sources
 returned), with an "Ask AI" box in the inbox. **P5.5 (multi-account mailbox)** is
-done: connect several Gmail/Microsoft accounts, merged into one inbox. In
-progress: **P9–P11 (Stage D productivity & polish)**. Then **P12 (billing &
-freemium gating)** — though per ROADMAP, charging should wait until the
+done: connect several Gmail/Microsoft accounts, merged into one inbox. **P9
+(snippets + snooze/remind)** done — pure scheduling in `src/lib/schedule.ts`,
+client-side snooze + Settings-managed snippets (Send Later deferred: read-only
+connectors). In progress: **P10–P11 (Stage D)**. Then **P12 (billing & freemium
+gating)** — though per ROADMAP, charging should wait until the
 Canadian-hosting + managed-KMS production gates are real. See also
 `CHANGELOG.md`, `ROADMAP.md`, and `OPEN_BUGS.md`.
 

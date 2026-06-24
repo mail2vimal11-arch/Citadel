@@ -36,7 +36,7 @@ rewrites, a separate grammar engine is redundant._
 | Split Inbox (lanes: VIP/tool/rule) | Starter | ✅ | lane routing by priority/label + VIP senders (P6) |
 | Auto Labels | Starter | 🟡 | per-item label today; custom labels P6 |
 | Custom Auto Labels | Business | 🔜 | P6 |
-| Snooze | Starter | 🔜 | P9 |
+| Snooze | Starter | ✅ | hide until a chosen time, reappears when due (P9) |
 | Unsubscribe / spam clearing | Starter | 🔜 | later |
 
 ## AI
@@ -55,9 +55,9 @@ rewrites, a separate grammar engine is redundant._
 ## Productivity
 | Superhuman feature | Tier | Citadel | Notes |
 |---|---|---|---|
-| Snippets (shareable) | Starter | 🔜 | P9 |
-| Send Later | Starter | 🔜 | P9 |
-| Follow-up Reminders | Starter | 🔜 | P9 |
+| Snippets | Starter | ✅ | reusable templates, inserted into Write-with-AI (P9) |
+| Send Later | Starter | 🟡 | scheduling primitive shipped; actual send needs a send scope (read-only now) |
+| Follow-up Reminders | Starter | ✅ | via snooze/remind-me (P9) |
 | Read statuses (open tracking) | Starter | 🚫/🟡 | conflicts with privacy brand; if built, **opt-in only** |
 
 ## Calendar

@@ -7,6 +7,15 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **P9 — Snippets · Snooze / Remind-me (BUILD_PLAN):** **Snooze** an item until a
+  chosen time (Later today / This evening / Tomorrow 9am / Next week) — it drops
+  out of the inbox and **reappears when due**, with a "Snoozed (N)" toggle to peek;
+  this doubles as follow-up reminders. **Snippets** — reusable templates managed
+  in Settings, inserted as one-tap chips into the Write-with-AI box. Both are
+  client-side (localStorage), and the scheduling is a pure, unit-tested module
+  (`src/lib/schedule.ts`). **Send Later** is deferred: actual transmission needs a
+  send-capable mail scope (Citadel's connectors are read-only), so only the
+  scheduling primitive ships now. 11 new tests (116 total green).
 - **P5.5 — Multi-account mailbox (BUILD_PLAN):** connect **several** Gmail and/or
   Microsoft accounts per user (work + personal), not one of each. A shared
   per-account token store (`accountStore.ts`) holds a list of accounts per

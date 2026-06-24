@@ -14,11 +14,13 @@ import {
   type Priority,
 } from "@/lib/inboxView";
 import { groupIntoLanes, parseVips } from "@/lib/lanes";
+import { isSnoozed, snoozeUntil, formatWake, SNOOZE_PRESETS, type SnoozePresetId } from "@/lib/schedule";
 
 const PAGE_SIZE = 20;
 const DONE_KEY = "citadel:done";
 const VIP_KEY = "citadel:vips";
 const SPLIT_KEY = "citadel:split";
+const SNOOZE_KEY = "citadel:snooze";
 
 const fmt = (iso: string) =>
   new Date(iso).toLocaleString(undefined, {
@@ -57,6 +59,9 @@ export default function InboxPage() {
   const [split, setSplit] = useState(true);
   const [vipText, setVipText] = useState("");
   const [editingVips, setEditingVips] = useState(false);
+  // Snooze / remind-me (P9): id -> wake-time ISO. Client-only, like "done".
+  const [snoozeMap, setSnoozeMap] = useState<Record<string, string>>({});
+  const [showSnoozed, setShowSnoozed] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const readingRef = useRef<HTMLDivElement>(null);
 
@@ -104,16 +109,26 @@ export default function InboxPage() {
     }
   };
 
-  // Restore Split Inbox preferences (VIP list + split on/off). Client-only.
+  // Restore Split Inbox preferences (VIP list + split on/off) + snoozes. Client-only.
   useEffect(() => {
     try {
       setVipText(localStorage.getItem(VIP_KEY) ?? "");
       const s = localStorage.getItem(SPLIT_KEY);
       if (s !== null) setSplit(s === "1");
+      const sn = localStorage.getItem(SNOOZE_KEY);
+      if (sn) setSnoozeMap(JSON.parse(sn));
     } catch {
       /* ignore */
     }
   }, []);
+  const persistSnooze = (next: Record<string, string>) => {
+    setSnoozeMap(next);
+    try {
+      localStorage.setItem(SNOOZE_KEY, JSON.stringify(next));
+    } catch {
+      /* ignore */
+    }
+  };
   const saveVips = (raw: string) => {
     setVipText(raw);
     try {
@@ -152,7 +167,16 @@ export default function InboxPage() {
 
   // ---- Derived view --------------------------------------------------------
   const sorted = useMemo(() => sortItems(items), [items]);
-  const visible = useMemo(() => applyDone(sorted, doneIds, showDone), [sorted, doneIds, showDone]);
+  const afterDone = useMemo(() => applyDone(sorted, doneIds, showDone), [sorted, doneIds, showDone]);
+  // Hide snoozed items until their wake time (unless the user is viewing them).
+  const snoozedCount = useMemo(
+    () => afterDone.filter((i) => isSnoozed(snoozeMap[i.id])).length,
+    [afterDone, snoozeMap]
+  );
+  const visible = useMemo(
+    () => (showSnoozed ? afterDone : afterDone.filter((i) => !isSnoozed(snoozeMap[i.id]))),
+    [afterDone, snoozeMap, showSnoozed]
+  );
   const paged = useMemo(() => paginate(visible, page, PAGE_SIZE), [visible, page]);
   const vips = useMemo(() => parseVips(vipText), [vipText]);
   // Split Inbox: group into lanes. `nav` is the order j/k and selection follow —
@@ -258,6 +282,28 @@ export default function InboxPage() {
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [doneIds, visible]
+  );
+
+  // Snooze the selected item until a preset time, then advance selection.
+  const snooze = useCallback(
+    (id: string, preset: SnoozePresetId) => {
+      const next = { ...snoozeMap, [id]: snoozeUntil(preset).toISOString() };
+      persistSnooze(next);
+      const remaining = visible.filter((i) => i.id !== id);
+      const idx = visible.findIndex((i) => i.id === id);
+      setSelectedId(remaining[Math.min(idx, remaining.length - 1)]?.id ?? null);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [snoozeMap, visible]
+  );
+  const unsnooze = useCallback(
+    (id: string) => {
+      const next = { ...snoozeMap };
+      delete next[id];
+      persistSnooze(next);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [snoozeMap]
   );
 
   // ---- Keyboard navigation -------------------------------------------------
@@ -443,6 +489,14 @@ export default function InboxPage() {
                     {showDone ? "Hide done" : `Show done (${doneCount})`}
                   </button>
                 )}
+                {snoozedCount > 0 && (
+                  <button
+                    className={`btn-secondary btn-small ${showSnoozed ? "is-on" : ""}`}
+                    onClick={() => setShowSnoozed((s) => !s)}
+                  >
+                    {showSnoozed ? "Hide snoozed" : `Snoozed (${snoozedCount})`}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -546,6 +600,9 @@ export default function InboxPage() {
                 busy={busy}
                 onForget={forgetOne}
                 onDone={markDone}
+                snoozedUntil={snoozeMap[selected.id] ?? null}
+                onSnooze={snooze}
+                onUnsnooze={unsnooze}
               />
             ) : (
               <ReadingForgotten item={selected} />
@@ -718,21 +775,39 @@ function SearchBox({
   );
 }
 
+type Snippet = { id: string; title: string; body: string };
+
 function ReadingActive({
   item,
   done,
   busy,
   onForget,
   onDone,
+  snoozedUntil,
+  onSnooze,
+  onUnsnooze,
 }: {
   item: ActiveItem;
   done: boolean;
   busy: boolean;
   onForget: (id: string) => void;
   onDone: (id: string) => void;
+  snoozedUntil: string | null;
+  onSnooze: (id: string, preset: SnoozePresetId) => void;
+  onUnsnooze: (id: string) => void;
 }) {
   const p = item.payload;
   const [copied, setCopied] = useState(false);
+  const [snoozeOpen, setSnoozeOpen] = useState(false);
+  // Snippets (P9): reusable templates managed in Settings, inserted here.
+  const [snippets, setSnippets] = useState<Snippet[]>([]);
+  useEffect(() => {
+    try {
+      setSnippets(JSON.parse(localStorage.getItem("citadel:snippets") ?? "[]"));
+    } catch {
+      setSnippets([]);
+    }
+  }, [item.id]);
   const copyDraft = async () => {
     try {
       await navigator.clipboard.writeText(p.draftReply);
@@ -811,6 +886,22 @@ function ReadingActive({
           value={instruction}
           onChange={(e) => setInstruction(e.target.value)}
         />
+        {snippets.length > 0 && (
+          <div className="ask-sources" style={{ marginTop: 8 }}>
+            <span className="note" style={{ margin: 0 }}>Snippets:</span>{" "}
+            {snippets.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                className="badge label ask-source"
+                title={s.body}
+                onClick={() => setInstruction((cur) => (cur ? `${cur} ${s.body}` : s.body))}
+              >
+                {s.title}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="toolbar" style={{ margin: "8px 0 0" }}>
           <button className="btn-primary btn-small" type="submit" disabled={composing || !instruction.trim()}>
             {composing ? "Drafting…" : "Draft with AI"}
@@ -838,6 +929,33 @@ function ReadingActive({
         <button className="btn-secondary btn-small" onClick={() => onDone(item.id)} disabled={done}>
           {done ? "Done" : "Mark done (e)"}
         </button>
+        {snoozedUntil ? (
+          <button className="btn-secondary btn-small" onClick={() => onUnsnooze(item.id)}>
+            Snoozed {formatWake(snoozedUntil)} · Unsnooze
+          </button>
+        ) : (
+          <span className="snooze-wrap">
+            <button className="btn-secondary btn-small" onClick={() => setSnoozeOpen((o) => !o)}>
+              Snooze ▾
+            </button>
+            {snoozeOpen && (
+              <span className="snooze-menu">
+                {SNOOZE_PRESETS.map((preset) => (
+                  <button
+                    key={preset.id}
+                    className="snooze-item"
+                    onClick={() => {
+                      setSnoozeOpen(false);
+                      onSnooze(item.id, preset.id);
+                    }}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </span>
+            )}
+          </span>
+        )}
         <button className="btn-danger btn-small" onClick={() => onForget(item.id)} disabled={busy}>
           Forget now (f)
         </button>
