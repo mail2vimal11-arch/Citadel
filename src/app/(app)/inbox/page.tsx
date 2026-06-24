@@ -19,6 +19,7 @@ import { isSnoozed, snoozeUntil, formatWake, SNOOZE_PRESETS, type SnoozePresetId
 import { proposeTimes, formatSlot, buildIcs } from "@/lib/availability";
 import { filterCommands, type CommandDef } from "@/lib/commands";
 import { replySubject } from "@/lib/email/mime";
+import { planLimits } from "@/lib/billing";
 
 type Command = CommandDef & { run: () => void };
 type SendAccount = { provider: "gmail" | "microsoft"; accountId: string; email?: string };
@@ -64,6 +65,7 @@ const intervalLabel: Record<string, string> = {
 export default function InboxPage() {
   const [items, setItems] = useState<Item[]>([]);
   const [forgetInterval, setForgetInterval] = useState<string>("24h");
+  const [plan, setPlan] = useState<string>("full"); // until loaded; avoids a flash of the banner
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState<{ kind: "ok" | "info"; text: string } | null>(null);
@@ -106,6 +108,7 @@ export default function InboxPage() {
     const data = await res.json();
     setItems(data.items);
     setForgetInterval(data.forgetInterval);
+    if (data.plan) setPlan(data.plan);
     setLoading(false);
   }, []);
 
@@ -466,6 +469,33 @@ export default function InboxPage() {
         <strong>{intervalLabel[forgetInterval] ?? forgetInterval}</strong>.{" "}
         <a href="/settings">Change schedule</a>.
       </p>
+
+      {plan === "free" && (() => {
+        const cap = planLimits("free").emailCap ?? 2;
+        const capped = activeCount >= cap;
+        const used = Math.min(activeCount, cap);
+        return (
+          <div className={`plan-banner ${capped ? "capped" : ""}`}>
+            <span className="plan-banner-icon" aria-hidden>✦</span>
+            <div className="plan-banner-body">
+              <div className="plan-banner-title">
+                {capped ? "Your Free inbox is full" : "You're on the Free plan"}
+              </div>
+              <div className="plan-banner-sub">
+                {capped
+                  ? `Free keeps ${cap} emails — upgrade to Full to see your whole inbox, with no text limit.`
+                  : `${used} of ${cap} emails used. Full lifts the cap and the per-email text limit.`}
+              </div>
+              <div className="plan-meter" aria-hidden>
+                <span style={{ width: `${(used / cap) * 100}%` }} />
+              </div>
+            </div>
+            <a className="btn-primary btn-small plan-banner-cta" href="/settings">
+              Upgrade to Full
+            </a>
+          </div>
+        );
+      })()}
 
       <div className="toolbar">
         <button className="btn-primary" onClick={process} disabled={busy}>
