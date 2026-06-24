@@ -88,6 +88,7 @@ export default function InboxPage() {
   const router = useRouter();
   const [paletteOpen, setPaletteOpen] = useState(false); // Cmd+K (P11)
   const [compose, setCompose] = useState<ComposeInit | null>(null); // send/reply (read-write)
+  const [addOpen, setAddOpen] = useState(false); // "Add account" provider chooser
 
   // ---- Data loading --------------------------------------------------------
   const loadGmail = useCallback(async () => {
@@ -388,6 +389,13 @@ export default function InboxPage() {
     ...gmail.accounts.map((a) => ({ provider: "gmail" as const, accountId: a.accountId, email: a.email })),
     ...m365.accounts.map((a) => ({ provider: "microsoft" as const, accountId: a.accountId, email: a.email })),
   ];
+  // Providers the user CAN add (OAuth credentials configured server-side). The
+  // single "Add account" button picks among these — Microsoft only appears once
+  // MICROSOFT_CLIENT_ID/SECRET are set.
+  const addProviders = [
+    gmail.configured ? { id: "google", label: "Google · Gmail", url: "/api/auth/google" } : null,
+    m365.configured ? { id: "microsoft", label: "Microsoft · Outlook / 365", url: "/api/auth/microsoft" } : null,
+  ].filter(Boolean) as { id: string; label: string; url: string }[];
 
   // Command palette entries (rebuilt each render so the closures stay fresh).
   const commands: Command[] = [
@@ -480,15 +488,28 @@ export default function InboxPage() {
             Reset demo
           </button>
         )}
-        {gmail.configured && (
-          <a className="btn-secondary" href="/api/auth/google">
-            {gmail.accounts.length ? "Add Gmail" : "Connect Gmail"}
-          </a>
-        )}
-        {m365.configured && (
-          <a className="btn-secondary" href="/api/auth/microsoft">
-            {m365.accounts.length ? "Add Microsoft" : "Connect Microsoft"}
-          </a>
+        {addProviders.length > 0 && (
+          <span className="menu-wrap">
+            <button
+              className="btn-secondary"
+              onClick={() =>
+                addProviders.length === 1
+                  ? (window.location.href = addProviders[0].url)
+                  : setAddOpen((o) => !o)
+              }
+            >
+              {connectedCount ? "+ Add account" : "Connect an account"}
+            </button>
+            {addOpen && addProviders.length > 1 && (
+              <span className="menu-down">
+                {addProviders.map((p) => (
+                  <a key={p.id} className="menu-item" href={p.url}>
+                    {p.label}
+                  </a>
+                ))}
+              </span>
+            )}
+          </span>
         )}
         <span className="note">
           {activeCount} active · {forgottenCount} forgotten{doneCount > 0 ? ` · ${doneCount} done` : ""}

@@ -203,14 +203,17 @@ GOOGLE_CLIENT_ID="...apps.googleusercontent.com"
 GOOGLE_CLIENT_SECRET="..."
 ```
 
-Restart the app. A **"Connect Gmail"** button appears in the inbox toolbar. Click
-it, approve the consent screen (you'll see an "unverified app" notice for your own
-test app — that's expected; continue), and you'll land back on the inbox now
-reading your real mail.
+Restart the app. An **"Connect an account"** button appears in the inbox toolbar
+(it becomes **"+ Add account"** once you have one). Click it — if more than one
+provider is configured you'll get a small chooser (Google · Gmail / Microsoft ·
+Outlook); pick Google, approve the consent screen (you'll see an "unverified app"
+notice for your own test app — that's expected; continue), and you'll land back
+on the inbox reading your real mail.
 
-You can connect **multiple accounts** — once one is connected the button becomes
-**"Add Gmail"** (and "Add Microsoft"), and every connected account is merged into
-one inbox. Each shows as a chip with its own **✕** to disconnect just that account.
+You can connect **multiple accounts** — every connected account is merged into one
+inbox, and each shows as a chip with its own **✕** to disconnect just that account.
+(The **Microsoft / Outlook** option only appears once `MICROSOFT_CLIENT_ID` /
+`MICROSOFT_CLIENT_SECRET` are set — see the Microsoft 365 section below.)
 
 > **Sending email (read-write).** Citadel can also *send* — **New email** in the
 > toolbar and a **Reply** button (seeded with the AI draft) open a compose window

@@ -7,6 +7,14 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **UX: one "Add account" button.** Replaced the separate "Add Gmail" / "Add
+  Microsoft" buttons with a single **"+ Add account"** (Superhuman-style): it
+  opens a provider chooser when more than one is configured, or goes straight to
+  the provider when only one is. Microsoft only appears once its OAuth creds are
+  set. (Note: the **Gmail message id is now stable** at `gmail:<accountId>:<id>`
+  as of the P5.5 multi-account change — items processed on a *pre-P5.5* build use
+  the old `gmail:<id>` and can appear duplicated after upgrading; **Reset demo**
+  once to normalize. The dedupe itself is correct; Refresh never creates rows.)
 - **Send & Reply (read-write) — NEW.** Citadel can now **send** mail, not just
   read it. A compose/reply modal (New email + a Reply button that seeds the AI
   draft) sends as a chosen connected account through a swappable **`MailSender`
