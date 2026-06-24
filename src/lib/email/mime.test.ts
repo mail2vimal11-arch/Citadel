@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildMimeMessage, base64Url, replySubject, extractEmail, parseRecipients } from "./mime";
+import { buildMimeMessage, base64Url, replySubject, extractEmail, parseRecipients, mergeReferences } from "./mime";
 
 describe("buildMimeMessage", () => {
   it("includes To, Subject and the body after a blank line", () => {
@@ -51,5 +51,14 @@ describe("extractEmail / parseRecipients", () => {
   });
   it("splits a To field into bare addresses", () => {
     expect(parseRecipients("a@x.com, Bob <b@y.com>")).toEqual(["a@x.com", "b@y.com"]);
+  });
+});
+
+describe("mergeReferences", () => {
+  it("appends the replied-to id and de-duplicates", () => {
+    expect(mergeReferences("<a@m> <b@m>", "<c@m>")).toBe("<a@m> <b@m> <c@m>");
+    expect(mergeReferences("<a@m>", "<a@m>")).toBe("<a@m>"); // no dupes
+    expect(mergeReferences(undefined, "<c@m>")).toBe("<c@m>");
+    expect(mergeReferences(undefined, undefined)).toBe("");
   });
 });

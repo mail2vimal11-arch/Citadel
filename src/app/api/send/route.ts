@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUserId } from "@/lib/apiUser";
-import { sendEmail, NeedsReconnectError, type SendProvider } from "@/lib/email/send";
+import { sendEmail, sendReply, NeedsReconnectError, type SendProvider } from "@/lib/email/send";
 import { recordAudit } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
@@ -26,16 +26,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Provide provider, accountId, to and body." }, { status: 400 });
   }
 
+  const replyToId = typeof b?.replyToId === "string" && b.replyToId ? b.replyToId : null;
+
   try {
-    await sendEmail(userId, provider, accountId, {
-      to,
-      subject,
-      body,
-      inReplyTo: typeof b?.inReplyTo === "string" ? b.inReplyTo : undefined,
-      references: typeof b?.references === "string" ? b.references : undefined,
-    });
+    if (replyToId) {
+      await sendReply(userId, provider, accountId, replyToId, { to, subject, body });
+    } else {
+      await sendEmail(userId, provider, accountId, { to, subject, body });
+    }
     // Content-free: provider + account only, never the recipient/subject/body.
-    await recordAudit({ userId, event: "SENT", message: `Sent 1 email via a connected ${provider} account.` });
+    await recordAudit({
+      userId,
+      event: "SENT",
+      message: `Sent 1 ${replyToId ? "reply" : "email"} via a connected ${provider} account.`,
+    });
     return NextResponse.json({ ok: true });
   } catch (e) {
     if (e instanceof NeedsReconnectError) {

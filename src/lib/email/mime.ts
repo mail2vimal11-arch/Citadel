@@ -60,3 +60,10 @@ export function parseRecipients(to: string): string[] {
     .map((p) => extractEmail(p))
     .filter(Boolean);
 }
+
+// Build the reply's References header: the original thread's References plus the
+// message we're replying to, space-joined and de-duplicated (RFC 5322 §3.6.4).
+export function mergeReferences(existing: string | undefined, messageId: string | undefined): string {
+  const ids = `${existing ?? ""} ${messageId ?? ""}`.trim().split(/\s+/).filter(Boolean);
+  return [...new Set(ids)].join(" ");
+}

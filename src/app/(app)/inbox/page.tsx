@@ -22,15 +22,19 @@ import { replySubject } from "@/lib/email/mime";
 
 type Command = CommandDef & { run: () => void };
 type SendAccount = { provider: "gmail" | "microsoft"; accountId: string; email?: string };
-type ComposeInit = { provider?: "gmail" | "microsoft"; accountId?: string; to?: string; subject?: string; body?: string };
+type ComposeInit = { provider?: "gmail" | "microsoft"; accountId?: string; to?: string; subject?: string; body?: string; replyToId?: string };
 
 // Map a namespaced item id (gmail:<acct>:<id> / m365:<acct>:<id>) back to the
-// provider + account it came from, so a reply goes out from the right mailbox.
-function parseItemRef(id: string): { provider: "gmail" | "microsoft"; accountId?: string } | null {
+// provider, account, and original message id — so a reply goes out from the
+// right mailbox and threads into the original conversation.
+function parseItemRef(id: string): { provider: "gmail" | "microsoft"; accountId?: string; messageId: string } | null {
   const parts = id.split(":");
-  if (parts[0] === "gmail") return { provider: "gmail", accountId: parts.length >= 3 ? parts[1] : undefined };
-  if (parts[0] === "m365") return { provider: "microsoft", accountId: parts.length >= 3 ? parts[1] : undefined };
-  return null;
+  const tag = parts[0];
+  if (tag !== "gmail" && tag !== "m365") return null;
+  const provider = tag === "gmail" ? "gmail" : "microsoft";
+  // gmail:<acct>:<id> (multi-account) or gmail:<id> (legacy single).
+  if (parts.length >= 3) return { provider, accountId: parts[1], messageId: parts.slice(2).join(":") };
+  return { provider, messageId: parts.slice(1).join(":") };
 }
 
 const PAGE_SIZE = 20;
@@ -691,6 +695,7 @@ export default function InboxPage() {
                     to: p.from,
                     subject: replySubject(p.subject),
                     body,
+                    replyToId: ref?.messageId,
                   });
                 }}
               />
@@ -870,7 +875,7 @@ function ComposeModal({
     const res = await fetch("/api/send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ provider: from.provider, accountId: from.accountId, to, subject, body }),
+      body: JSON.stringify({ provider: from.provider, accountId: from.accountId, to, subject, body, replyToId: init.replyToId }),
     });
     const d = await res.json().catch(() => ({}));
     setSending(false);

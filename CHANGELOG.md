@@ -17,8 +17,13 @@ yet using semantic-version releases.
   takes an explicit confirm, stores **nothing** (raw content never persisted),
   and records a **content-free `SENT`** audit event. MIME construction (incl.
   header-injection stripping), base64url, `Re:` handling and recipient parsing
-  are a pure, unit-tested module (`src/lib/email/mime.ts`). Threaded replies
-  (real `Message-ID`/`References`) are a follow-up. 9 new tests (138 total green).
+  are a pure, unit-tested module (`src/lib/email/mime.ts`). **Replies thread
+  properly** (`sendReply`): Gmail sends with the original `Message-Id`/
+  `References` + `threadId`; Microsoft uses Graph `createReply` — so a reply lands
+  in the original conversation (a true single client, no app-shuffle). This
+  stays consistent with the privacy promise: sending stores nothing and the
+  promise is about *residency + minimization + forgetting*, not read-only.
+  10 new tests (140 total green).
 - **P11 — Keyboard-first UX + Cmd+K (BUILD_PLAN):** a **command palette** —
   press **⌘K / Ctrl+K** anywhere in the inbox to fuzzy-search and run actions
   (Process inbox, Refresh, Search, toggle Split Inbox, Forget all, Reset, connect/

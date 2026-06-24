@@ -29,17 +29,6 @@ _Last updated: 2026-06-23_
   endpoint.
 - **Status:** Open (enhancement).
 
-### BUG-007 — Replies are not threaded
-- **Severity:** Low (feature polish)
-- **Where:** `src/lib/email/send.ts` / compose modal. A reply goes out as a new
-  message to the original sender with a `Re:` subject, but without real
-  `In-Reply-To`/`References` headers (we don't persist the original `Message-ID`),
-  so it may not group into the original thread in the recipient's client.
-- **Fix:** at reply time, fetch the original message's `Message-ID` + thread id by
-  its (already-known) provider id via the read scope, and set the threading
-  headers / Gmail `threadId`.
-- **Status:** Open (follow-up to the send feature).
-
 ### BUG-008 — Connected accounts need reconnect to send
 - **Severity:** Low (one-time, expected)
 - **Where:** OAuth scopes gained `gmail.send` / `Mail.Send`. Accounts connected
@@ -59,6 +48,12 @@ _Last updated: 2026-06-23_
 ---
 
 ## Resolved
+
+### BUG-007 — Replies are now threaded
+- **Resolved 2026-06-24.** `sendReply` threads properly: Gmail fetches the
+  original `Message-Id`/`References` + `threadId` (read scope) and sends with
+  `In-Reply-To`/`References` + `threadId`; Microsoft uses Graph `createReply`
+  (PATCH the body/recipients, then send). `mergeReferences` is unit-tested.
 
 ### BUG-006 — One mailbox per provider (no multi-account)
 - **Resolved 2026-06-24 (P5.5).** Tokens were one file per provider per user, so

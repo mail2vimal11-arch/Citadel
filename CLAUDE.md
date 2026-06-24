@@ -125,9 +125,11 @@ Calendar scope). **P11 (keyboard + Cmd+K)** done — a fuzzy command palette
 (`src/lib/commands.ts`) over inbox + nav actions. **Stage D (P9–P11) complete.**
 **Send & Reply (read-write)** added out of sequence: a `MailSender` seam
 (`send.ts`, Gmail/Graph) + pure tested `mime.ts`, a compose/reply modal, send
-scopes (`gmail.send`/`Mail.Send` — existing accounts must reconnect), and a
-content-free `SENT` audit event. Threaded replies are a follow-up.
-Next is **P12 (billing & freemium gating)** — though per ROADMAP, charging should wait until the
+scopes (`gmail.send`/`Mail.Send` — existing accounts must reconnect), a
+content-free `SENT` audit event, and **threaded replies** (`sendReply`: Gmail
+`Message-Id`/`threadId`, Microsoft Graph `createReply`). Sending keeps the
+privacy promise (nothing stored; the promise is residency + minimization +
+forgetting, not read-only). Next is **P12 (billing & freemium gating)** — though per ROADMAP, charging should wait until the
 Canadian-hosting + managed-KMS production gates are real. See also
 `CHANGELOG.md`, `ROADMAP.md`, and `OPEN_BUGS.md`.
 

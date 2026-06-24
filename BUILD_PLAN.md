@@ -256,10 +256,17 @@ T-shirt size (S/M/L). "Gate" phases unblock revenue and should not be skipped.
 - **Tested:** 9 mime tests (headers, body separator, threading headers, injection
   stripping, base64url round-trip, `Re:`, recipient parsing). 138 green; `tsc` +
   `next build` clean.
+  **Threaded replies** ship too (`sendReply`): Gmail uses the original
+  `Message-Id`/`References` + `threadId`; Microsoft uses Graph `createReply`. So a
+  reply lands in the conversation — a true single client, no app-shuffle.
 - **Docs:** ARCHITECTURE (MailSender seam + scopes + SENT), CHANGELOG, COMPETITIVE,
-  README (send scope + reconnect), CLAUDE, OPEN_BUGS (threading follow-up).
-- **Note:** this changes the posture from read-only → read-write — weigh against
-  the sovereign/minimal positioning. Threaded replies are a follow-up.
+  README (send scope + reconnect), CLAUDE, OPEN_BUGS.
+- **Note:** this is read-write, but it does NOT weaken the privacy promise — that
+  promise is *zero content stored + provable forgetting + data residency + local
+  AI*, none of which sending touches (the message is built in memory, nothing is
+  persisted, audit stays content-free). The only delta is a broader OAuth scope
+  the user grants their own client — exactly like any mail app. A unified
+  read+draft+send client beats forcing a two-app shuffle for one reply.
 
 ### P10 · Calendar  · M · ✅ DONE (2026-06-24)
 - **Built:** pure availability (`src/lib/availability.ts`) — `freeSlots` (free
