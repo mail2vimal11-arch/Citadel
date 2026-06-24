@@ -25,8 +25,8 @@ rewrites, a separate grammar engine is redundant._
 | Works on Gmail | Starter | ✅ | Read-only Gmail API + OAuth shipped |
 | Works on Outlook / M365 (incl. personal) | Starter | ✅ | Read-only Microsoft Graph (`Mail.Read`) + OAuth on `/common` shipped |
 | Multiple accounts (several Gmail + Outlook, merged) | Starter | ✅ | per-account tokens + CompositeSource (P5.5) |
-| Keyboard-first + 100+ shortcuts | Starter | 🔜 | P11 |
-| Cmd+K command palette | Starter | 🔜 | P11 |
+| Keyboard-first + shortcuts | Starter | ✅ | j/k/e/f/r/⌘K + nav (P4/P11) |
+| Cmd+K command palette | Starter | ✅ | fuzzy-filtered, arrow-navigable (P11) |
 | Inbox Zero workflow | Starter | 🟡 | process/forget loop exists; needs list UX |
 
 ## Triage & organization

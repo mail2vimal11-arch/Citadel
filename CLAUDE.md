@@ -121,8 +121,9 @@ client-side snooze + Settings-managed snippets (Send Later deferred: read-only
 connectors). **P10 (calendar)** done — pure `src/lib/availability.ts`
 (free-slots, propose-times, .ics), surfaced as "Propose times" + "Add to
 calendar" in the reading pane (open working-day model; live free/busy needs a
-Calendar scope). In progress: **P11 (keyboard + Cmd+K)**. Then **P12 (billing &
-freemium gating)** — though per ROADMAP, charging should wait until the
+Calendar scope). **P11 (keyboard + Cmd+K)** done — a fuzzy command palette
+(`src/lib/commands.ts`) over inbox + nav actions. **Stage D (P9–P11) complete.**
+Next is **P12 (billing & freemium gating)** — though per ROADMAP, charging should wait until the
 Canadian-hosting + managed-KMS production gates are real. See also
 `CHANGELOG.md`, `ROADMAP.md`, and `OPEN_BUGS.md`.
 

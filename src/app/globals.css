@@ -385,6 +385,17 @@ button:disabled { opacity: 0.45; cursor: default; }
 .reading-privacy strong { color: var(--accent-ink); }
 .reading-section-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); font-weight: 650; }
 
+/* Command palette — Cmd+K (P11) */
+.cmdk-overlay { position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-start; justify-content: center; padding-top: 14vh; background: rgba(4, 4, 6, 0.55); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+.cmdk { width: min(560px, 92vw); background: var(--panel); border: 1px solid var(--line-2); border-radius: var(--r); box-shadow: var(--shadow-md), 0 40px 100px -40px rgba(158, 110, 229, 0.55); overflow: hidden; }
+.cmdk-input { width: 100%; padding: 16px 18px; font-size: 15px; color: var(--ink); background: var(--panel-2); border: none; border-bottom: 1px solid var(--line); }
+.cmdk-input:focus { outline: none; }
+.cmdk-input::placeholder { color: rgba(255, 255, 255, 0.4); }
+.cmdk-list { list-style: none; margin: 0; padding: 6px; max-height: 50vh; overflow-y: auto; }
+.cmdk-item { display: flex; width: 100%; text-align: left; padding: 10px 12px; border: none; border-radius: var(--r-sm); background: none; color: var(--ink-2); font-size: 14px; }
+.cmdk-item.active { background: var(--accent-soft); color: var(--ink); }
+.cmdk-empty { padding: 16px 12px; color: var(--muted); font-size: 14px; text-align: center; }
+
 /* Snooze menu (P9) */
 .snooze-wrap { position: relative; display: inline-flex; }
 .snooze-menu { position: absolute; bottom: calc(100% + 6px); left: 0; z-index: 20; display: flex; flex-direction: column; min-width: 160px; background: var(--panel-2); border: 1px solid var(--line-2); border-radius: var(--r-sm); box-shadow: var(--shadow-md); overflow: hidden; }

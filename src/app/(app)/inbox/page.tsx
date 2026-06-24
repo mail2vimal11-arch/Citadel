@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   sortItems,
   applyDone,
@@ -16,6 +17,9 @@ import {
 import { groupIntoLanes, parseVips } from "@/lib/lanes";
 import { isSnoozed, snoozeUntil, formatWake, SNOOZE_PRESETS, type SnoozePresetId } from "@/lib/schedule";
 import { proposeTimes, formatSlot, buildIcs } from "@/lib/availability";
+import { filterCommands, type CommandDef } from "@/lib/commands";
+
+type Command = CommandDef & { run: () => void };
 
 const PAGE_SIZE = 20;
 const DONE_KEY = "citadel:done";
@@ -65,6 +69,8 @@ export default function InboxPage() {
   const [showSnoozed, setShowSnoozed] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const readingRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const [paletteOpen, setPaletteOpen] = useState(false); // Cmd+K (P11)
 
   // ---- Data loading --------------------------------------------------------
   const loadGmail = useCallback(async () => {
@@ -314,6 +320,12 @@ export default function InboxPage() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // Cmd/Ctrl+K toggles the command palette from anywhere (even while typing).
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+        return;
+      }
       const el = e.target as HTMLElement | null;
       const typing = el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
       const action = keyAction(e.key);
@@ -356,8 +368,37 @@ export default function InboxPage() {
   const connectedCount = gmail.accounts.length + m365.accounts.length;
   const liveMailbox = connectedCount > 0;
 
+  // Command palette entries (rebuilt each render so the closures stay fresh).
+  const commands: Command[] = [
+    { id: "process", label: "Process inbox", keywords: ["run", "ai", "fetch"], run: () => process() },
+    { id: "refresh", label: "Refresh", keywords: ["reload"], run: () => load() },
+    { id: "search", label: "Search the inbox", keywords: ["find", "semantic"], run: () => searchRef.current?.focus() },
+    { id: "split", label: split ? "Split Inbox: turn off" : "Split Inbox: turn on", keywords: ["lanes", "vip"], run: toggleSplit },
+    { id: "settings", label: "Go to Settings", keywords: ["tone", "schedule", "snippets"], run: () => router.push("/settings") },
+    { id: "audit", label: "Go to Audit log", keywords: ["proof", "log"], run: () => router.push("/audit") },
+  ];
+  if (activeCount > 0)
+    commands.push({ id: "forgetall", label: "Log out & forget all", keywords: ["shred", "destroy"], run: () => forgetAll() });
+  if (items.length > 0)
+    commands.push({ id: "reset", label: "Reset demo", keywords: ["wipe", "clear"], run: () => resetDemo() });
+  if (gmail.configured)
+    commands.push({
+      id: "gmail",
+      label: gmail.accounts.length ? "Add Gmail account" : "Connect Gmail",
+      keywords: ["mailbox", "google"],
+      run: () => { window.location.href = "/api/auth/google"; },
+    });
+  if (m365.configured)
+    commands.push({
+      id: "microsoft",
+      label: m365.accounts.length ? "Add Microsoft account" : "Connect Microsoft",
+      keywords: ["mailbox", "outlook", "365"],
+      run: () => { window.location.href = "/api/auth/microsoft"; },
+    });
+
   return (
     <div>
+      {paletteOpen && <CommandPalette commands={commands} onClose={() => setPaletteOpen(false)} />}
       {liveMailbox ? (
         <div className="banner warn">
           <strong>
@@ -585,6 +626,7 @@ export default function InboxPage() {
               <span><span className="kbd">f</span> forget</span>
               <span><span className="kbd">/</span> search</span>
               <span><span className="kbd">r</span> refresh</span>
+              <span><span className="kbd">⌘K</span> commands</span>
             </div>
           </div>
 
@@ -669,6 +711,76 @@ function AskBox({ onPick }: { onPick: (id: string) => void }) {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// Cmd+K command palette (P11). Fuzzy-filtered, arrow-navigable, Enter to run.
+function CommandPalette({ commands, onClose }: { commands: Command[]; onClose: () => void }) {
+  const [q, setQ] = useState("");
+  const [active, setActive] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const filtered = filterCommands(q, commands);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+  useEffect(() => {
+    setActive(0);
+  }, [q]);
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActive((a) => Math.min(a + 1, filtered.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActive((a) => Math.max(a - 1, 0));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const c = filtered[active];
+      if (c) {
+        onClose();
+        c.run();
+      }
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      onClose();
+    }
+  };
+
+  return (
+    <div className="cmdk-overlay" onClick={onClose}>
+      <div className="cmdk" onClick={(e) => e.stopPropagation()}>
+        <input
+          ref={inputRef}
+          className="cmdk-input"
+          placeholder="Type a command…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={onKeyDown}
+        />
+        <ul className="cmdk-list">
+          {filtered.length === 0 ? (
+            <li className="cmdk-empty">No matching commands</li>
+          ) : (
+            filtered.map((c, i) => (
+              <li key={c.id}>
+                <button
+                  className={`cmdk-item ${i === active ? "active" : ""}`}
+                  onMouseEnter={() => setActive(i)}
+                  onClick={() => {
+                    onClose();
+                    c.run();
+                  }}
+                >
+                  {c.label}
+                </button>
+              </li>
+            ))
+          )}
+        </ul>
+      </div>
     </div>
   );
 }

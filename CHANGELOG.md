@@ -7,6 +7,13 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **P11 — Keyboard-first UX + Cmd+K (BUILD_PLAN):** a **command palette** —
+  press **⌘K / Ctrl+K** anywhere in the inbox to fuzzy-search and run actions
+  (Process inbox, Refresh, Search, toggle Split Inbox, Forget all, Reset, connect/
+  add accounts, go to Settings/Audit), arrow-navigable, Enter to run, Esc to close.
+  The match/rank logic is a pure, unit-tested module (`src/lib/commands.ts`:
+  substring beats subsequence, position-weighted). Joins the existing
+  `j`/`k`/`e`/`f`/`/`/`r` shortcuts. 9 new tests (132 total green).
 - **P10 — Calendar (BUILD_PLAN):** scheduling helpers for replies. **Propose
   times** inserts suggested meeting slots into the Write-with-AI box, and **Add to
   calendar** downloads an `.ics` event built from the message (create-event-from-

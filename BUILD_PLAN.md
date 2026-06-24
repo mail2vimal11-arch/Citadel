@@ -255,10 +255,16 @@ T-shirt size (S/M/L). "Gate" phases unblock revenue and should not be skipped.
   `next build` clean.
 - **Docs:** BUILD_PLAN, COMPETITIVE, CHANGELOG, CLAUDE.
 
-### P11 · Keyboard-first UX + Cmd+K  · M
-- **Build:** shortcut map, command palette, fast navigation.
-- **Test:** keymap unit tests; a11y smoke.
-- **Docs:** README, COMPETITIVE, CHANGELOG.
+### P11 · Keyboard-first UX + Cmd+K  · M · ✅ DONE (2026-06-24)
+- **Built:** a **Cmd/Ctrl+K command palette** — fuzzy-filtered, arrow-navigable,
+  Enter-to-run — over the inbox + nav actions (process, refresh, search, toggle
+  split, forget-all, reset, connect/add accounts, go to Settings/Audit). Pure
+  match/rank core in `src/lib/commands.ts`. Adds to the existing keyboard set
+  (`j`/`k`/`e`/`f`/`/`/`r`), with a `⌘K` hint in the shortcut row.
+- **Tested:** 9 command-palette unit tests (`fuzzyScore` substring > subsequence,
+  position weighting, no-match; `filterCommands` label/keyword match, ordering,
+  exclusion). 132 green; `tsc` + `next build` clean.
+- **Docs:** BUILD_PLAN, COMPETITIVE, CHANGELOG, CLAUDE.
 
 ---
 
