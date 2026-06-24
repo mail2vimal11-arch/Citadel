@@ -81,7 +81,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div>
+    <div className="container">
       <div className="banner">
         <strong>Data minimization by design.</strong> Choose how long the assistant keeps
         AI-derived data before it permanently forgets it (by destroying each item’s key).

@@ -397,7 +397,7 @@ export default function InboxPage() {
     });
 
   return (
-    <div>
+    <div className="container-wide">
       {paletteOpen && <CommandPalette commands={commands} onClose={() => setPaletteOpen(false)} />}
       {liveMailbox ? (
         <div className="banner warn">

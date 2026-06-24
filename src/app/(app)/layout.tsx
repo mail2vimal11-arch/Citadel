@@ -14,7 +14,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <>
       <Nav />
-      <main className="container">{children}</main>
+      <main>{children}</main>
     </>
   );
 }

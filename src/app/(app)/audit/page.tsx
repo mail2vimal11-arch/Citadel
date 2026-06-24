@@ -36,7 +36,7 @@ export default function AuditPage() {
   }, [load]);
 
   return (
-    <div>
+    <div className="container">
       <div className="banner">
         <strong>Proof, not content.</strong> This append-only log records <em>that</em> an
         item was processed and <em>when</em> it was forgotten — never the email content, the
