@@ -18,8 +18,20 @@ import { groupIntoLanes, parseVips } from "@/lib/lanes";
 import { isSnoozed, snoozeUntil, formatWake, SNOOZE_PRESETS, type SnoozePresetId } from "@/lib/schedule";
 import { proposeTimes, formatSlot, buildIcs } from "@/lib/availability";
 import { filterCommands, type CommandDef } from "@/lib/commands";
+import { replySubject } from "@/lib/email/mime";
 
 type Command = CommandDef & { run: () => void };
+type SendAccount = { provider: "gmail" | "microsoft"; accountId: string; email?: string };
+type ComposeInit = { provider?: "gmail" | "microsoft"; accountId?: string; to?: string; subject?: string; body?: string };
+
+// Map a namespaced item id (gmail:<acct>:<id> / m365:<acct>:<id>) back to the
+// provider + account it came from, so a reply goes out from the right mailbox.
+function parseItemRef(id: string): { provider: "gmail" | "microsoft"; accountId?: string } | null {
+  const parts = id.split(":");
+  if (parts[0] === "gmail") return { provider: "gmail", accountId: parts.length >= 3 ? parts[1] : undefined };
+  if (parts[0] === "m365") return { provider: "microsoft", accountId: parts.length >= 3 ? parts[1] : undefined };
+  return null;
+}
 
 const PAGE_SIZE = 20;
 const DONE_KEY = "citadel:done";
@@ -71,6 +83,7 @@ export default function InboxPage() {
   const readingRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const [paletteOpen, setPaletteOpen] = useState(false); // Cmd+K (P11)
+  const [compose, setCompose] = useState<ComposeInit | null>(null); // send/reply (read-write)
 
   // ---- Data loading --------------------------------------------------------
   const loadGmail = useCallback(async () => {
@@ -367,6 +380,10 @@ export default function InboxPage() {
   // ---- Render --------------------------------------------------------------
   const connectedCount = gmail.accounts.length + m365.accounts.length;
   const liveMailbox = connectedCount > 0;
+  const allAccounts: SendAccount[] = [
+    ...gmail.accounts.map((a) => ({ provider: "gmail" as const, accountId: a.accountId, email: a.email })),
+    ...m365.accounts.map((a) => ({ provider: "microsoft" as const, accountId: a.accountId, email: a.email })),
+  ];
 
   // Command palette entries (rebuilt each render so the closures stay fresh).
   const commands: Command[] = [
@@ -399,6 +416,17 @@ export default function InboxPage() {
   return (
     <div className="container-wide">
       {paletteOpen && <CommandPalette commands={commands} onClose={() => setPaletteOpen(false)} />}
+      {compose && (
+        <ComposeModal
+          accounts={allAccounts}
+          init={compose}
+          onClose={() => setCompose(null)}
+          onSent={() => {
+            setCompose(null);
+            setFlash({ kind: "ok", text: "Email sent. A content-free SENT entry is in the Audit log." });
+          }}
+        />
+      )}
       <div className="inbox-head">
       {liveMailbox ? (
         <div className="banner warn">
@@ -433,6 +461,11 @@ export default function InboxPage() {
         <button className="btn-secondary" onClick={load} disabled={busy}>
           Refresh
         </button>
+        {allAccounts.length > 0 && (
+          <button className="btn-secondary" onClick={() => setCompose({})}>
+            New email
+          </button>
+        )}
         {activeCount > 0 && (
           <button className="btn-danger" onClick={forgetAll} disabled={busy}>
             Log out &amp; forget all
@@ -648,6 +681,18 @@ export default function InboxPage() {
                 snoozedUntil={snoozeMap[selected.id] ?? null}
                 onSnooze={snooze}
                 onUnsnooze={unsnooze}
+                canSend={allAccounts.length > 0}
+                onReply={(body) => {
+                  const ref = parseItemRef(selected.id);
+                  const p = selected.payload;
+                  setCompose({
+                    provider: ref?.provider,
+                    accountId: ref?.accountId,
+                    to: p.from,
+                    subject: replySubject(p.subject),
+                    body,
+                  });
+                }}
               />
             ) : (
               <ReadingForgotten item={selected} />
@@ -787,6 +832,94 @@ function CommandPalette({ commands, onClose }: { commands: Command[]; onClose: (
   );
 }
 
+// Compose / Reply modal (read-write send). Sends as a connected account after
+// an explicit confirm; the body is editable and seeded from the AI draft.
+function ComposeModal({
+  accounts,
+  init,
+  onClose,
+  onSent,
+}: {
+  accounts: SendAccount[];
+  init: ComposeInit;
+  onClose: () => void;
+  onSent: () => void;
+}) {
+  // Default the "from" account: the one the reply came from, else the first.
+  const initialIdx = Math.max(
+    0,
+    accounts.findIndex((a) => a.provider === init.provider && (!init.accountId || a.accountId === init.accountId))
+  );
+  const [fromIdx, setFromIdx] = useState(initialIdx);
+  const [to, setTo] = useState(init.to ?? "");
+  const [subject, setSubject] = useState(init.subject ?? "");
+  const [body, setBody] = useState(init.body ?? "");
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const from = accounts[fromIdx];
+
+  const send = async () => {
+    if (!to.trim() || !body.trim()) {
+      setError("A recipient and a message are required.");
+      return;
+    }
+    if (!confirm(`Send this email as ${from.email ?? from.accountId}? This is a real, outgoing message.`)) return;
+    setSending(true);
+    setError(null);
+    const res = await fetch("/api/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ provider: from.provider, accountId: from.accountId, to, subject, body }),
+    });
+    const d = await res.json().catch(() => ({}));
+    setSending(false);
+    if (res.ok) onSent();
+    else if (d?.needsReconnect)
+      setError(`Reconnect this ${from.provider === "gmail" ? "Gmail" : "Microsoft"} account (toolbar) to grant send permission, then try again.`);
+    else setError(d?.error ?? "Send failed.");
+  };
+
+  return (
+    <div className="cmdk-overlay" onClick={onClose}>
+      <div className="compose-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="compose-row">
+          <label className="compose-label">From</label>
+          <select className="compose-field" value={fromIdx} onChange={(e) => setFromIdx(Number(e.target.value))}>
+            {accounts.map((a, i) => (
+              <option key={`${a.provider}-${a.accountId}`} value={i}>
+                {a.email ?? a.accountId} ({a.provider === "gmail" ? "Gmail" : "Microsoft"})
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="compose-row">
+          <label className="compose-label">To</label>
+          <input className="compose-field" value={to} onChange={(e) => setTo(e.target.value)} placeholder="recipient@example.com" />
+        </div>
+        <div className="compose-row">
+          <label className="compose-label">Subject</label>
+          <input className="compose-field" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" />
+        </div>
+        <textarea
+          className="compose-input"
+          style={{ marginTop: 10, minHeight: 200 }}
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          placeholder="Write your message…"
+        />
+        {error && <div className="flash info" style={{ marginTop: 10, marginBottom: 0 }}>{error}</div>}
+        <div className="toolbar" style={{ margin: "12px 0 0", justifyContent: "flex-end" }}>
+          <button className="btn-secondary btn-small" onClick={onClose}>Cancel</button>
+          <button className="btn-primary btn-small" onClick={send} disabled={sending}>
+            {sending ? "Sending…" : "Send"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // One row in the message list — shared by the flat and Split-Inbox renderings.
 function MsgRow({
   item,
@@ -901,6 +1034,8 @@ function ReadingActive({
   snoozedUntil,
   onSnooze,
   onUnsnooze,
+  canSend,
+  onReply,
 }: {
   item: ActiveItem;
   done: boolean;
@@ -910,6 +1045,8 @@ function ReadingActive({
   snoozedUntil: string | null;
   onSnooze: (id: string, preset: SnoozePresetId) => void;
   onUnsnooze: (id: string) => void;
+  canSend: boolean;
+  onReply: (body: string) => void;
 }) {
   const p = item.payload;
   const [copied, setCopied] = useState(false);
@@ -1066,6 +1203,15 @@ function ReadingActive({
       </form>
 
       <div className="toolbar" style={{ marginTop: 14, marginBottom: 0 }}>
+        {canSend && (
+          <button
+            className="btn-primary btn-small"
+            onClick={() => onReply(composed ?? p.draftReply)}
+            title="Open a reply pre-filled with this draft"
+          >
+            Reply
+          </button>
+        )}
         <button className="btn-secondary btn-small" onClick={() => onDone(item.id)} disabled={done}>
           {done ? "Done" : "Mark done (e)"}
         </button>

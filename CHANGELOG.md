@@ -7,6 +7,18 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **Send & Reply (read-write) — NEW.** Citadel can now **send** mail, not just
+  read it. A compose/reply modal (New email + a Reply button that seeds the AI
+  draft) sends as a chosen connected account through a swappable **`MailSender`
+  seam** (Gmail `messages.send` / Microsoft Graph `sendMail`). This adds the
+  least-privilege **send scopes** (`gmail.send` / `Mail.Send`) — a deliberate
+  shift from read-only — so **existing connected accounts must reconnect** to
+  grant it (a clear "reconnect" hint shows on the first send if not). Every send
+  takes an explicit confirm, stores **nothing** (raw content never persisted),
+  and records a **content-free `SENT`** audit event. MIME construction (incl.
+  header-injection stripping), base64url, `Re:` handling and recipient parsing
+  are a pure, unit-tested module (`src/lib/email/mime.ts`). Threaded replies
+  (real `Message-ID`/`References`) are a follow-up. 9 new tests (138 total green).
 - **P11 — Keyboard-first UX + Cmd+K (BUILD_PLAN):** a **command palette** —
   press **⌘K / Ctrl+K** anywhere in the inbox to fuzzy-search and run actions
   (Process inbox, Refresh, Search, toggle Split Inbox, Forget all, Reset, connect/

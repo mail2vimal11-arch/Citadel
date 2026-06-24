@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 type Event = {
   id: string;
-  event: "PROCESSED" | "FORGOTTEN" | "SETTINGS_CHANGED";
+  event: "PROCESSED" | "FORGOTTEN" | "SETTINGS_CHANGED" | "DRAFTED" | "SENT";
   message: string;
   sourceRef: string | null;
   itemId: string | null;

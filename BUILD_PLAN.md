@@ -243,6 +243,24 @@ T-shirt size (S/M/L). "Gate" phases unblock revenue and should not be skipped.
   + `next build` clean.
 - **Docs:** BUILD_PLAN, COMPETITIVE, CHANGELOG, CLAUDE.
 
+### Send & Reply (read-write)  · M · ✅ DONE (2026-06-24, out of original sequence)
+- **Goal:** actually send/reply, not just draft (user opted into read-write).
+- **Built:** a `MailSender` seam (`send.ts`) — Gmail `messages.send` / Microsoft
+  Graph `sendMail` — behind a pure, tested MIME builder (`mime.ts`: build +
+  header-injection stripping, base64url, `Re:`, recipient parsing). `POST
+  /api/send` sends as a chosen connected account after a client confirm, persists
+  nothing, audits a content-free `SENT`. Inbox gains a compose/reply modal (New
+  email + Reply seeded from the AI draft, from-account picker). Added the
+  least-privilege send scopes (`gmail.send` / `Mail.Send`) → existing accounts
+  must reconnect (handled with a `NeedsReconnectError` hint).
+- **Tested:** 9 mime tests (headers, body separator, threading headers, injection
+  stripping, base64url round-trip, `Re:`, recipient parsing). 138 green; `tsc` +
+  `next build` clean.
+- **Docs:** ARCHITECTURE (MailSender seam + scopes + SENT), CHANGELOG, COMPETITIVE,
+  README (send scope + reconnect), CLAUDE, OPEN_BUGS (threading follow-up).
+- **Note:** this changes the posture from read-only → read-write — weigh against
+  the sovereign/minimal positioning. Threaded replies are a follow-up.
+
 ### P10 · Calendar  · M · ✅ DONE (2026-06-24)
 - **Built:** pure availability (`src/lib/availability.ts`) — `freeSlots` (free
   gaps around busy blocks), `proposeTimes` (next weekday slots), `formatSlot`,

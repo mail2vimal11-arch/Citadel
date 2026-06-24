@@ -29,6 +29,25 @@ _Last updated: 2026-06-23_
   endpoint.
 - **Status:** Open (enhancement).
 
+### BUG-007 — Replies are not threaded
+- **Severity:** Low (feature polish)
+- **Where:** `src/lib/email/send.ts` / compose modal. A reply goes out as a new
+  message to the original sender with a `Re:` subject, but without real
+  `In-Reply-To`/`References` headers (we don't persist the original `Message-ID`),
+  so it may not group into the original thread in the recipient's client.
+- **Fix:** at reply time, fetch the original message's `Message-ID` + thread id by
+  its (already-known) provider id via the read scope, and set the threading
+  headers / Gmail `threadId`.
+- **Status:** Open (follow-up to the send feature).
+
+### BUG-008 — Connected accounts need reconnect to send
+- **Severity:** Low (one-time, expected)
+- **Where:** OAuth scopes gained `gmail.send` / `Mail.Send`. Accounts connected
+  before sending existed hold read-only tokens, so the first send returns 403.
+- **Workaround:** click **Add Gmail / Add Microsoft** to reconnect (the UI shows a
+  reconnect hint on the 403). By design — a scope upgrade always needs re-consent.
+- **Status:** Open (expected; documented in README).
+
 ### BUG-004 — Residual Next.js security advisories
 - **Severity:** Low (for this prototype — issues are DoS / image-optimizer /
   middleware / cache-poisoning, none exercised by this app)

@@ -38,8 +38,8 @@ infrastructure — no API keys or cloud endpoints exist anywhere in the app.
   configured, redirects unauthenticated visitors to `/signin`). The route group
   keeps the app chrome off the landing without changing URLs.
 - `/api/...` — server routes (process, items, forget, settings, audit, reset,
-  search, compose, ask, `auth/{google,microsoft}[/callback|/status]` for the
-  Gmail / Microsoft 365 OAuth flows, and `auth/[...nextauth]` for the Auth.js
+  search, compose, ask, send, `auth/{google,microsoft}[/callback|/status]` for
+  the Gmail / Microsoft 365 OAuth flows, and `auth/[...nextauth]` for the Auth.js
   session handlers). Each data route
   resolves the caller with `requireUserId()` (`src/lib/apiUser.ts`) and scopes
   every query to that user; it returns 401 when auth is on and there's no session.
@@ -95,6 +95,18 @@ second account can be added), `.../callback`, and `.../status`
 account across Gmail + Microsoft. `TODO(production)`: per-user tokens in a
 Canadian-controlled secrets manager — never a file or the DB; an account cap on
 the free tier (P12).
+
+**Sending (read-write).** Reading and sending are separate seams: sending lives
+in `src/lib/email/send.ts` (`sendEmail(userId, provider, accountId, msg)`), with
+the least-privilege **send scopes** (`gmail.send` / `Mail.Send`) added to OAuth —
+so accounts connected before sending existed must **reconnect** (a 403 surfaces
+as `NeedsReconnectError` → a reconnect hint). `POST /api/send` sends as the
+chosen account after a client-side confirm, **persists nothing**, and writes a
+content-free `SENT` audit event. Message construction (`src/lib/email/mime.ts`:
+MIME build with header-injection stripping, base64url, `Re:`, recipient parsing)
+is pure + tested. The inbox's compose/reply modal feeds it; the body is seeded
+from the AI draft. `TODO(production)`: outbound queue/retry, threaded replies
+(real `Message-ID`/`References`), rate limits.
 
 ### 2. `AIProvider` — `src/lib/ai/AIProvider.ts`
 `summarize()`, `triage()`, `draftReply(email, {tone})`, `compose(req)`,
@@ -217,8 +229,8 @@ and `src/lib/db.postgres.test.ts` validates the schema under the Postgres provid
 - `VaultKey` — per-item key record. Under the default `KmsKeyVault`, `material`
   is the **wrapped** DEK (ciphertext, useless without the KEK); under the demo
   vault it's a raw base64 key. `destroyed` flag + nulled material = shred.
-- `AuditEvent` — `PROCESSED` / `FORGOTTEN` / `SETTINGS_CHANGED` / `DRAFTED`,
-  content-free.
+- `AuditEvent` — `PROCESSED` / `FORGOTTEN` / `SETTINGS_CHANGED` / `DRAFTED` /
+  `SENT`, content-free.
   Carries `userId`; indexed by `[userId, createdAt]`.
 - `Setting` — per-user forget interval (`userId` is the primary key).
 - **Auth.js tables** — `User`, `Account`, `Session`, `VerificationToken` (the

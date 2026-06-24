@@ -212,6 +212,15 @@ You can connect **multiple accounts** — once one is connected the button becom
 **"Add Gmail"** (and "Add Microsoft"), and every connected account is merged into
 one inbox. Each shows as a chip with its own **✕** to disconnect just that account.
 
+> **Sending email (read-write).** Citadel can also *send* — **New email** in the
+> toolbar and a **Reply** button (seeded with the AI draft) open a compose window
+> that sends as a connected account. This needs the least-privilege send scopes
+> (`gmail.send` / `Mail.Send`), so **if you connected an account before this, click
+> "Add Gmail"/"Add Microsoft" to reconnect** and grant send — the first send will
+> tell you if it's missing. For Gmail, add `…/auth/gmail.send` to your OAuth
+> consent screen's scopes. Every send asks for confirmation, stores nothing, and
+> logs a content-free `SENT` audit entry.
+
 Tuning (optional, in `.env`): `EMAIL_SOURCE` (`auto` | `sample` | `gmail` |
 `microsoft`) and `GMAIL_MAX_MESSAGES` (how many recent messages to pull).
 

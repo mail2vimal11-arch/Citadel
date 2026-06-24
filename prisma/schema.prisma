@@ -83,7 +83,7 @@ model AuditEvent {
   userId    String
   itemId    String?
   sourceRef String? // a non-sensitive reference label, safe to keep after forget
-  event     String // PROCESSED | FORGOTTEN | SETTINGS_CHANGED | DRAFTED
+  event     String // PROCESSED | FORGOTTEN | SETTINGS_CHANGED | DRAFTED | SENT
   message   String // human-readable, non-sensitive
   createdAt DateTime @default(now())
 

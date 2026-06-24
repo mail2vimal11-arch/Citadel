@@ -27,7 +27,7 @@ const AUTHORITY = "https://login.microsoftonline.com/common/oauth2/v2.0";
 const AUTH_URL = `${AUTHORITY}/authorize`;
 const TOKEN_URL = `${AUTHORITY}/token`;
 const GRAPH_ME = "https://graph.microsoft.com/v1.0/me";
-const SCOPE = "offline_access Mail.Read User.Read";
+const SCOPE = "offline_access Mail.Read Mail.Send User.Read";
 
 export function microsoftOAuthConfigured(): boolean {
   return Boolean(process.env.MICROSOFT_CLIENT_ID && process.env.MICROSOFT_CLIENT_SECRET);

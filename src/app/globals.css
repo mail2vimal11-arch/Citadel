@@ -274,6 +274,7 @@ button:disabled { opacity: 0.45; cursor: default; }
 .tag.FORGOTTEN { background: rgba(255, 145, 165, 0.16); color: var(--urgent); }
 .tag.SETTINGS_CHANGED { background: rgba(255, 255, 255, 0.08); color: var(--low); }
 .tag.DRAFTED { background: rgba(158, 110, 229, 0.16); color: var(--accent-ink); }
+.tag.SENT { background: rgba(98, 204, 123, 0.16); color: var(--ok); }
 
 /* ---------------------------------------------------------------- Settings */
 .radio-row {
@@ -389,6 +390,14 @@ button:disabled { opacity: 0.45; cursor: default; }
 .reading-privacy { font-size: 12.5px; color: var(--muted); line-height: 1.55; background: var(--accent-soft); border: 1px solid rgba(158, 110, 229, 0.22); border-radius: var(--r-sm); padding: 9px 12px; margin: 12px 0; }
 .reading-privacy strong { color: var(--accent-ink); }
 .reading-section-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); font-weight: 650; }
+
+/* Compose / reply modal (send) */
+.compose-modal { width: min(620px, 94vw); background: var(--panel); border: 1px solid var(--line-2); border-radius: var(--r); box-shadow: var(--shadow-md), 0 40px 100px -40px rgba(158, 110, 229, 0.45); padding: 18px; }
+.compose-row { display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--line); padding: 4px 0; }
+.compose-label { width: 64px; font-size: 12px; color: var(--muted); font-weight: 600; }
+.compose-field { flex: 1; padding: 9px 4px; font: inherit; font-size: 14px; color: var(--ink); background: none; border: none; }
+.compose-field:focus { outline: none; }
+select.compose-field { background: var(--panel); }
 
 /* Command palette — Cmd+K (P11) */
 .cmdk-overlay { position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-start; justify-content: center; padding-top: 14vh; background: rgba(4, 4, 6, 0.55); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }

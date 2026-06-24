@@ -28,6 +28,7 @@ rewrites, a separate grammar engine is redundant._
 | Keyboard-first + shortcuts | Starter | ✅ | j/k/e/f/r/⌘K + nav (P4/P11) |
 | Cmd+K command palette | Starter | ✅ | fuzzy-filtered, arrow-navigable (P11) |
 | Inbox Zero workflow | Starter | 🟡 | process/forget loop exists; needs list UX |
+| Compose / Reply / Send | Starter | ✅ | send as a connected account (Gmail/Graph), opt-in read-write scope |
 
 ## Triage & organization
 | Superhuman feature | Tier | Citadel | Notes |
@@ -56,7 +57,7 @@ rewrites, a separate grammar engine is redundant._
 | Superhuman feature | Tier | Citadel | Notes |
 |---|---|---|---|
 | Snippets | Starter | ✅ | reusable templates, inserted into Write-with-AI (P9) |
-| Send Later | Starter | 🟡 | scheduling primitive shipped; actual send needs a send scope (read-only now) |
+| Send Later | Starter | 🟡 | send shipped; scheduling primitive shipped — wiring the two (deferred send) is the remaining step |
 | Follow-up Reminders | Starter | ✅ | via snooze/remind-me (P9) |
 | Read statuses (open tracking) | Starter | 🚫/🟡 | conflicts with privacy brand; if built, **opt-in only** |
 
