@@ -399,6 +399,7 @@ export default function InboxPage() {
   return (
     <div className="container-wide">
       {paletteOpen && <CommandPalette commands={commands} onClose={() => setPaletteOpen(false)} />}
+      <div className="inbox-head">
       {liveMailbox ? (
         <div className="banner warn">
           <strong>
@@ -502,6 +503,7 @@ export default function InboxPage() {
       {activeCount > 0 && (
         <AskBox onPick={(id) => select(id, split ? undefined : visible.findIndex((i) => i.id === id))} />
       )}
+      </div>
 
       {loading ? (
         <p className="empty">Loading…</p>
