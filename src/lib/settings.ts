@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import type { ForgetInterval } from "@/lib/types";
 import { normalizeTone, type Tone } from "@/lib/ai/prompts";
+import { normalizePlan, type Plan } from "@/lib/billing";
 
 export const FORGET_OPTIONS: { value: ForgetInterval; label: string; ms: number | null }[] = [
   { value: "1h", label: "After 1 hour", ms: 60 * 60 * 1000 },
@@ -57,4 +58,14 @@ export async function setTone(userId: string, tone: Tone): Promise<void> {
     update: { tone },
     create: { userId, tone },
   });
+}
+
+// ---- Plan (freemium gating, P12) --------------------------------------------
+export async function getPlan(userId: string): Promise<Plan> {
+  const setting = await prisma.setting.upsert({ where: { userId }, update: {}, create: { userId } });
+  return normalizePlan(setting.plan);
+}
+
+export async function setPlan(userId: string, plan: Plan): Promise<void> {
+  await prisma.setting.upsert({ where: { userId }, update: { plan }, create: { userId, plan } });
 }

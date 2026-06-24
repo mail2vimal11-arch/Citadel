@@ -90,11 +90,12 @@ model AuditEvent {
   @@index([userId, createdAt])
 }
 
-// Per-user settings (the forget schedule + the Write-with-AI tone). Keyed by userId.
+// Per-user settings (the forget schedule + Write-with-AI tone + plan). Keyed by userId.
 model Setting {
   userId         String @id
   forgetInterval String @default("24h") // "1h" | "24h" | "7d" | "logout"
   tone           String @default("professional") // professional | warm | concise | direct | formal
+  plan           String @default("free") // free | full  (freemium gating; charging is a separate seam)
 }
 
 // --------------------------------------------------------------------------

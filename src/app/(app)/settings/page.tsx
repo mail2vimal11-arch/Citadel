@@ -12,6 +12,7 @@ export default function SettingsPage() {
   const [selected, setSelected] = useState<string>("24h");
   const [tones, setTones] = useState<ToneOption[]>([]);
   const [tone, setTone] = useState<string>("professional");
+  const [plan, setPlan] = useState<string>("free");
   const [saved, setSaved] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   // Snippets (P9) — reusable templates, stored client-side, inserted in the
@@ -28,6 +29,7 @@ export default function SettingsPage() {
         setSelected(d.forgetInterval);
         setTones(d.tones ?? []);
         setTone(d.tone ?? "professional");
+        setPlan(d.plan ?? "free");
       });
     try {
       setSnippets(JSON.parse(localStorage.getItem(SNIPPETS_KEY) ?? "[]"));
@@ -54,6 +56,22 @@ export default function SettingsPage() {
     setSnipBody("");
   };
   const removeSnippet = (id: string) => persistSnippets(snippets.filter((s) => s.id !== id));
+
+  const savePlan = async (value: string) => {
+    setBusy(true);
+    setPlan(value);
+    await fetch("/api/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ plan: value }),
+    });
+    setBusy(false);
+    setSaved(
+      value === "full"
+        ? "Plan set to Full — unlimited emails. (Demo switch; no real billing.)"
+        : "Plan set to Free — capped at 2 emails. (Demo switch; no real billing.)"
+    );
+  };
 
   const save = async (value: string) => {
     setBusy(true);
@@ -173,6 +191,29 @@ export default function SettingsPage() {
           </button>
         </div>
       </div>
+
+      <p className="subtitle" style={{ marginTop: 32 }}>Plan</p>
+      <p className="note" style={{ marginTop: -16, marginBottom: 14 }}>
+        <strong style={{ color: "var(--ink)" }}>Free</strong> = a real inbox capped at
+        <strong> 2 emails</strong> with limited text. <strong style={{ color: "var(--ink)" }}>Full</strong> = unlimited.
+        This is a <strong>demo switch</strong> — real billing (Stripe) is deferred until the
+        Canadian-hosting &amp; managed-KMS gates are live (see <code>ROADMAP.md</code>).
+      </p>
+      {["free", "full"].map((value) => (
+        <label key={value} className={`radio-row ${plan === value ? "selected" : ""}`}>
+          <input
+            type="radio"
+            name="plan"
+            value={value}
+            checked={plan === value}
+            onChange={() => savePlan(value)}
+            disabled={busy}
+          />
+          <span style={{ textTransform: "capitalize" }}>
+            {value} {value === "free" ? "— 2 emails, limited text" : "— unlimited"}
+          </span>
+        </label>
+      ))}
 
       {saved && <div className="flash ok" style={{ marginTop: 14 }}>{saved}</div>}
     </div>

@@ -234,11 +234,12 @@ export default function InboxPage() {
     await load();
     setBusy(false);
     setFlash({
-      kind: "ok",
+      kind: data.capped ? "info" : "ok",
       text:
         (data.processed > 0
           ? `Processed ${data.processed} new email(s) into encrypted derived data.`
           : `No new emails to process (all ${data.skipped} already done).`) +
+        (data.capped ? ` Free plan reached its 2-email cap — upgrade to Full in Settings for unlimited.` : "") +
         (data.emailSource ? ` Source: ${data.emailSource}.` : "") +
         (data.aiProvider ? ` AI: ${data.aiProvider}.` : ""),
     });

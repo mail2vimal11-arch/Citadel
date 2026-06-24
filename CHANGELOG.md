@@ -7,6 +7,16 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **P12 (gating half) — Freemium limits.** Added a per-user **plan** (free | full)
+  and enforced the **free cap in the pipeline**: free = a real inbox capped at
+  **2 emails** with **limited AI text** (2000 chars); full = unlimited. Processing
+  stops at the cap and reports it (inbox flash + a **Plan** section in Settings
+  with a demo switch). Limits are a pure, tested module (`src/lib/billing.ts`)
+  plus an end-to-end pipeline test. **Charging is deliberately NOT built** — real
+  Stripe billing is deferred until the Canadian-hosting + managed-KMS sovereignty
+  gates are live (ROADMAP); the plan-state seam is ready and the demo switch is
+  clearly marked. The `Setting.plan` column is additive (default `free`) — safe
+  `db push`, no data loss.
 - **UX: one "Add account" button.** Replaced the separate "Add Gmail" / "Add
   Microsoft" buttons with a single **"+ Add account"** (Superhuman-style): it
   opens a provider chooser when more than one is configured, or goes straight to

@@ -7,10 +7,13 @@ import {
   setForgetInterval,
   getTone,
   setTone,
+  getPlan,
+  setPlan,
 } from "@/lib/settings";
 import { recordAudit } from "@/lib/audit";
 import { requireUserId } from "@/lib/apiUser";
 import { TONES, normalizeTone } from "@/lib/ai/prompts";
+import { PLANS, normalizePlan } from "@/lib/billing";
 import type { ForgetInterval } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -19,12 +22,18 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const userId = await requireUserId();
   if (userId instanceof NextResponse) return userId;
-  const [forgetInterval, tone] = await Promise.all([getForgetInterval(userId), getTone(userId)]);
+  const [forgetInterval, tone, plan] = await Promise.all([
+    getForgetInterval(userId),
+    getTone(userId),
+    getPlan(userId),
+  ]);
   return NextResponse.json({
     forgetInterval,
     options: FORGET_OPTIONS,
     tone,
     tones: TONES.map((t) => ({ value: t.value, label: t.label })),
+    plan,
+    plans: PLANS,
   });
 }
 
@@ -49,6 +58,19 @@ export async function POST(req: Request) {
       message: `Write-with-AI tone changed to "${tone}".`,
     });
     return NextResponse.json({ ok: true, tone });
+  }
+
+  // ---- Plan update (DEMO: no real billing yet — see TODO(production)) ----
+  if (body?.plan !== undefined && body?.forgetInterval === undefined) {
+    if (!PLANS.includes(body.plan)) {
+      return NextResponse.json({ ok: false, error: "Invalid plan" }, { status: 400 });
+    }
+    // TODO(production): plan changes come from a verified Stripe webhook, never a
+    // client POST. This demo switch only exists to show the freemium gating.
+    const plan = normalizePlan(body.plan);
+    await setPlan(userId, plan);
+    await recordAudit({ userId, event: "SETTINGS_CHANGED", message: `Plan changed to "${plan}" (demo).` });
+    return NextResponse.json({ ok: true, plan });
   }
 
   // ---- Forget-schedule update ----

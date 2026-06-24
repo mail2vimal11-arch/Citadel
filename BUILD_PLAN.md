@@ -295,12 +295,21 @@ T-shirt size (S/M/L). "Gate" phases unblock revenue and should not be skipped.
 
 ## Stage E — Monetize
 
-### P12 · Billing & freemium gating  · M · **Gate**
-- **Goal:** the cash register (only after P1–P3 make the promise true).
-- **Build:** Stripe; **Full $15/mo or $10/mo annual**; enforce the **free cap
-  (2 emails / limited text)** in the pipeline; plan-state feature gates.
-- **Test:** gating unit tests (free vs full limits); webhook handling tests.
-- **Docs:** PROJECT (pricing live), ROADMAP, CHANGELOG.
+### P12 · Billing & freemium gating  · M · **Gate** · 🟡 GATING DONE (2026-06-24)
+- **Goal:** the cash register (only after the sovereignty gates make the promise true).
+- **Built (gating half):** a per-user `plan` (free | full) on `Setting`; pure,
+  tested limits (`src/lib/billing.ts`: free = 2 emails / 2000 AI chars, full =
+  unlimited). The pipeline **enforces the cap** (stops at the limit, reports
+  `capped`) and **truncates AI text** on free; the inbox flash and a Settings
+  **Plan** section surface it. A demo plan switch (Settings) shows the gating.
+- **Deferred (charging half):** real **Stripe** billing + webhooks are NOT built —
+  per ROADMAP we don't take money until the Canadian-hosting + managed-KMS gates
+  are live. The plan-state seam is ready; `// TODO(production):` plan changes come
+  from a verified Stripe webhook, never a client POST (today's demo switch).
+- **Tested:** `billing` limits + an end-to-end pipeline test (free stops at 2 +
+  `capped`; full lifts it). 147 green.
+- **Docs:** BUILD_PLAN, CHANGELOG, COMPETITIVE, CLAUDE.
+- **Done-when (charging):** still gated on the sovereignty work — see ROADMAP.
 
 ---
 

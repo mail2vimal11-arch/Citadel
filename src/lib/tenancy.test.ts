@@ -4,6 +4,7 @@ import { processInbox } from "@/lib/pipeline";
 import { loadInbox } from "@/lib/inbox";
 import { listAudit } from "@/lib/audit";
 import { forgetAll } from "@/lib/forget/forgetEngine";
+import { setPlan } from "@/lib/settings";
 
 // P1 — multi-tenant isolation. The whole privacy promise depends on one rule:
 // data is scoped by userId and one account can NEVER see, search, or forget
@@ -26,6 +27,9 @@ beforeAll(async () => {
   process.env.EMAIL_SOURCE = "sample";
   await wipe(A);
   await wipe(B);
+  // Full plan so the cap (free = 2) doesn't truncate this isolation test.
+  await setPlan(A, "full");
+  await setPlan(B, "full");
 });
 
 afterAll(async () => {
