@@ -48,14 +48,16 @@ export function extractBody(msg: GraphMessage): string {
   return (msg.bodyPreview ?? "").trim();
 }
 
-export function toRawEmail(msg: GraphMessage): RawEmail {
+export function toRawEmail(msg: GraphMessage, accountId?: string): RawEmail {
   const receivedAt = msg.receivedDateTime
     ? new Date(msg.receivedDateTime).toISOString()
     : new Date().toISOString();
   let body = extractBody(msg).trim();
   if (body.length > MAX_BODY_CHARS) body = body.slice(0, MAX_BODY_CHARS) + "…";
   return {
-    id: `m365:${msg.id}`, // namespaced so it never collides with gmail/sample ids
+    // Namespaced vs gmail/sample; optional accountId disambiguates two connected
+    // Microsoft accounts (P5.5 multi-account).
+    id: accountId ? `m365:${accountId}:${msg.id}` : `m365:${msg.id}`,
     from: formatAddress(msg.from),
     to: joinRecipients(msg.toRecipients),
     subject: msg.subject ?? "",

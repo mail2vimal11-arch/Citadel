@@ -129,11 +129,25 @@ T-shirt size (S/M/L). "Gate" phases unblock revenue and should not be skipped.
 - **Docs:** ARCHITECTURE (EmailSource status), README (connect M365),
   COMPETITIVE, CHANGELOG, CLAUDE. Done.
 
-### P5.5 · Multi-account mailbox  · M · 🔜 PLANNED
+### P5.5 · Multi-account mailbox  · M · ✅ DONE (2026-06-24)
 - **Goal:** connect **several** Gmail / Microsoft accounts per user (work +
-  personal), not one of each. Today the token is one file per provider per user
-  (`google-<userId>.json` / `microsoft-<userId>.json`), so a second connect
-  **overwrites** the first.
+  personal), not one of each.
+- **Built:** a shared per-account token store (`accountStore.ts`) holding a LIST
+  of accounts per user+provider, with read-time migration of the legacy
+  single-token file (no re-auth). `googleAuth`/`microsoftAuth` are now
+  multi-account (`prompt=select_account` to add another); the sources iterate all
+  of a provider's accounts and a `CompositeSource` merges Gmail + Microsoft into
+  one inbox, with `sourceId` namespaced per account. Status routes list accounts;
+  DELETE`?accountId=` disconnects one. Inbox shows account chips (per-account
+  disconnect) + Add Gmail/Add Microsoft. Bodies still in-memory only.
+- **Tested:** account-store migration + upsert/remove/list, composite merge +
+  fail-skip, per-account `sourceId` namespacing, `auto`→sample when none
+  connected. 104 green; `tsc` + `next build` clean; runtime smoke (status returns
+  `{configured, accounts[]}`; processing still works).
+- **Docs:** ARCHITECTURE (multi-account token model + CompositeSource), README,
+  COMPETITIVE, CHANGELOG, CLAUDE, OPEN_BUGS (BUG-005 closed). Done.
+- _Original plan:_ today the token was one file per provider per user, so a
+  second connect overwrote the first.
 - **Build:**
   - **Token store → per-account list.** Replace the single-token file with a
     per-user, per-provider **list of account records** (each: stable `accountId`,

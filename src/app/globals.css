@@ -322,6 +322,13 @@ button:disabled { opacity: 0.45; cursor: default; }
 .inbox-layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
 @media (max-width: 880px) { .inbox-layout { grid-template-columns: 1fr; } }
 
+/* Connected mailbox accounts (P5.5) */
+.accounts { display: flex; flex-wrap: wrap; gap: 8px; margin: -8px 0 20px; }
+.account-chip { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--ink-2); background: var(--panel); border: 1px solid var(--line-2); border-radius: 999px; padding: 4px 6px 4px 11px; }
+.account-prov { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--accent-ink); background: var(--accent-soft); border-radius: 999px; padding: 2px 7px; }
+.account-x { font-size: 11px; line-height: 1; color: var(--muted); background: var(--panel-2); border: 1px solid var(--line); border-radius: 50%; width: 18px; height: 18px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+.account-x:hover:not(:disabled) { color: var(--danger); border-color: rgba(255, 145, 165, 0.4); background: rgba(255, 145, 165, 0.12); }
+
 .list-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
 .btn-secondary.is-on { color: var(--ink); border-color: var(--accent); background: var(--accent-soft); }
 

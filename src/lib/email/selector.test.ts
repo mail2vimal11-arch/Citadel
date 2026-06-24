@@ -27,4 +27,9 @@ describe("getEmailSource selector", () => {
     process.env.EMAIL_SOURCE = "m365";
     expect((await getEmailSource("u1")).name).toMatch(/microsoft|graph/i);
   });
+
+  it("falls back to the synthetic source in auto when nothing is connected", async () => {
+    process.env.EMAIL_SOURCE = "auto";
+    expect((await getEmailSource("selector-noaccts-user")).name).toMatch(/synthetic/i);
+  });
 });

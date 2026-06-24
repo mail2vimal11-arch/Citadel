@@ -40,8 +40,11 @@ npx next build                     # full build (set AI_PROVIDER=heuristic if no
 All app code talks to interfaces, never concrete impls. Selectors are the only
 lines to change for production.
 - `src/lib/email/EmailSource.ts` → `SampleDataSource` (synthetic) · `GmailSource`
-  (read-only Gmail) · `MicrosoftGraphSource` (read-only Microsoft 365). Picked in
-  `src/lib/email/index.ts` via `EMAIL_SOURCE` (`auto`|`sample`|`gmail`|`microsoft`).
+  (read-only Gmail) · `MicrosoftGraphSource` (read-only Microsoft 365) ·
+  `CompositeSource` (merges them). Picked in `src/lib/email/index.ts` via
+  `EMAIL_SOURCE` (`auto`|`sample`|`gmail`|`microsoft`). **Multi-account** (P5.5):
+  per-account tokens via `accountStore.ts` (legacy file auto-migrated); `auto`
+  merges every connected Gmail + Microsoft account into one inbox.
 - `src/lib/ai/AIProvider.ts` → `ApertusLocalProvider` (Ollama) · `LocalHeuristicProvider`
   (offline fallback). Selected in `src/lib/ai/index.ts` via `AI_PROVIDER`
   (`auto`|`apertus`|`heuristic`). All model traffic goes through
@@ -111,9 +114,11 @@ content-free `DRAFTED` audit event, all over a pure tested prompt module
 priority/label + a client-side VIP sender list, with a Split toggle + VIP editor
 in the inbox. **P8 (Ask AI)** is done: `POST /api/ask` does local RAG (retrieval
 via `searchInbox`, grounded `answer()` over derived fields only, sources
-returned), with an "Ask AI" box in the inbox. Next on the fast path is **P12
-(billing & freemium gating)** — though per ROADMAP, charging should wait until
-the Canadian-hosting + managed-KMS production gates are real. See also
+returned), with an "Ask AI" box in the inbox. **P5.5 (multi-account mailbox)** is
+done: connect several Gmail/Microsoft accounts, merged into one inbox. In
+progress: **P9–P11 (Stage D productivity & polish)**. Then **P12 (billing &
+freemium gating)** — though per ROADMAP, charging should wait until the
+Canadian-hosting + managed-KMS production gates are real. See also
 `CHANGELOG.md`, `ROADMAP.md`, and `OPEN_BUGS.md`.
 
 ## Gotchas (learned the hard way)

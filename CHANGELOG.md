@@ -7,6 +7,17 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **P5.5 — Multi-account mailbox (BUILD_PLAN):** connect **several** Gmail and/or
+  Microsoft accounts per user (work + personal), not one of each. A shared
+  per-account token store (`accountStore.ts`) holds a list of accounts per
+  user+provider and **migrates the old single-token file** into a one-account
+  list on read (no re-auth). The OAuth start uses `prompt=select_account` so a
+  second account can be added; each provider source iterates all its accounts and
+  a new `CompositeSource` **merges Gmail + Microsoft into one inbox**, with
+  `sourceId` namespaced per account so nothing collides. Status routes now return
+  the account list, and `DELETE …/status?accountId=` disconnects a single account.
+  The inbox shows account chips with per-account disconnect plus Add Gmail / Add
+  Microsoft. Bodies still processed in memory only. 8 new tests (104 total green).
 - **P8 — Ask AI / Q&A over your inbox (BUILD_PLAN):** ask a natural-language
   question and get an answer **grounded in your own mail**, fully local. `POST
   /api/ask` does RAG: retrieval reuses the in-memory semantic search (keyword

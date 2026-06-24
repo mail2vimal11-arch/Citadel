@@ -75,6 +75,10 @@ describe("toRawEmail", () => {
     expect(raw.receivedAt).toBe("2026-06-20T14:30:00.000Z");
   });
 
+  it("namespaces the id by account when one is given (multi-account)", () => {
+    expect(toRawEmail(msg, "me@firm.com").id).toBe("m365:me@firm.com:AAMkAGI2");
+  });
+
   it("tolerates missing subject and date", () => {
     const raw = toRawEmail({ id: "x", bodyPreview: "hi" });
     expect(raw.subject).toBe("");

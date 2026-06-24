@@ -64,7 +64,7 @@ export function extractBody(part: GmailPart | undefined): string {
   return "";
 }
 
-export function toRawEmail(msg: GmailMessage): RawEmail {
+export function toRawEmail(msg: GmailMessage, accountId?: string): RawEmail {
   const headers = msg.payload?.headers;
   const receivedAt = msg.internalDate
     ? new Date(Number(msg.internalDate)).toISOString()
@@ -72,7 +72,9 @@ export function toRawEmail(msg: GmailMessage): RawEmail {
   let body = extractBody(msg.payload).trim();
   if (body.length > MAX_BODY_CHARS) body = body.slice(0, MAX_BODY_CHARS) + "…";
   return {
-    id: `gmail:${msg.id}`, // namespaced so it never collides with sample ids
+    // Namespaced so it never collides with sample ids; the optional accountId
+    // keeps two connected Gmail accounts from colliding (P5.5 multi-account).
+    id: accountId ? `gmail:${accountId}:${msg.id}` : `gmail:${msg.id}`,
     from: header(headers, "From"),
     to: header(headers, "To"),
     subject: header(headers, "Subject"),

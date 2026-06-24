@@ -1,6 +1,6 @@
 import type { EmailSource } from "./EmailSource";
 import type { RawEmail } from "@/lib/types";
-import { getAccessToken } from "./microsoftAuth";
+import { getAccessToken, microsoftAccounts } from "./microsoftAuth";
 import { toRawEmail, type GraphMessage } from "./graphParse";
 
 // ============================================================================
@@ -28,8 +28,21 @@ export class MicrosoftGraphSource implements EmailSource {
   constructor(private readonly userId: string) {}
 
   async listEmails(): Promise<RawEmail[]> {
-    const token = await getAccessToken(this.userId);
+    // Merge the newest inbox messages from EVERY connected Microsoft account.
+    const accounts = await microsoftAccounts(this.userId);
+    const emails: RawEmail[] = [];
+    for (const acct of accounts) {
+      try {
+        emails.push(...(await this.listForAccount(acct.accountId)));
+      } catch {
+        continue; // skip a failing account rather than sink the inbox
+      }
+    }
+    return emails;
+  }
 
+  private async listForAccount(accountId: string): Promise<RawEmail[]> {
+    const token = await getAccessToken(this.userId, accountId);
     // One call: newest inbox messages with just the fields we map. Graph returns
     // the full body inline, so unlike Gmail we don't need a second fetch per id.
     const url =
@@ -39,6 +52,6 @@ export class MicrosoftGraphSource implements EmailSource {
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     if (!res.ok) throw new Error(`Microsoft Graph list failed (${res.status})`);
     const data = (await res.json()) as { value?: GraphMessage[] };
-    return (data.value ?? []).map(toRawEmail);
+    return (data.value ?? []).map((m) => toRawEmail(m, accountId));
   }
 }

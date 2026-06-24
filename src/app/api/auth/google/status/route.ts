@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import {
-  googleConnection,
+  googleAccounts,
   googleOAuthConfigured,
   clearGoogleToken,
 } from "@/lib/email/googleAuth";
@@ -8,18 +8,20 @@ import { requireUserId } from "@/lib/apiUser";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/auth/google/status — is Gmail configured / connected, and for whom?
+// GET /api/auth/google/status — is Gmail configured, and which accounts are on?
 export async function GET() {
   const userId = await requireUserId();
   if (userId instanceof NextResponse) return userId;
-  const conn = await googleConnection(userId);
-  return NextResponse.json({ configured: googleOAuthConfigured(), ...conn });
+  const accounts = await googleAccounts(userId);
+  return NextResponse.json({ configured: googleOAuthConfigured(), accounts });
 }
 
-// DELETE /api/auth/google/status — disconnect Gmail (delete the stored token).
-export async function DELETE() {
+// DELETE /api/auth/google/status?accountId=... — disconnect ONE Gmail account
+// (or all of them when accountId is omitted). Returns how many remain.
+export async function DELETE(req: Request) {
   const userId = await requireUserId();
   if (userId instanceof NextResponse) return userId;
-  await clearGoogleToken(userId);
-  return NextResponse.json({ ok: true });
+  const accountId = new URL(req.url).searchParams.get("accountId") ?? undefined;
+  const remaining = await clearGoogleToken(userId, accountId);
+  return NextResponse.json({ ok: true, remaining });
 }

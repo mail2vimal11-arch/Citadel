@@ -75,15 +75,26 @@ a connected account wins (Gmail, then Microsoft), else the synthetic source.
 | `SampleDataSource` | `src/lib/email/SampleDataSource.ts` | ✅ used in demo (synthetic) |
 | `GmailSource` | `src/lib/email/GmailSource.ts` | ✅ real — read-only Gmail API (`gmail.readonly`) via OAuth 2.0; bodies in memory only |
 | `MicrosoftGraphSource` | `src/lib/email/MicrosoftGraphSource.ts` | ✅ real — read-only Microsoft Graph (`Mail.Read`) via OAuth 2.0 on the `/common` authority (work/school + personal Outlook); bodies in memory only |
+| `CompositeSource` | `src/lib/email/CompositeSource.ts` | ✅ merges several sources/accounts into one inbox (P5.5) |
 
-Each connector keeps OAuth + token storage in its own module — Gmail in
+Each connector keeps OAuth in its own module — Gmail in
 `src/lib/email/googleAuth.ts`, Microsoft in `src/lib/email/microsoftAuth.ts` —
-holding the consent URL, code/refresh exchange, and a per-user **gitignored**
-token file (`.citadel-secrets/{google,microsoft}-<userId>.json`). Provider
-payload parsing is pure and unit-tested (`gmailParse.ts`, `graphParse.ts`). The
-sign-in routes mirror each other: `src/app/api/auth/{google,microsoft}` (start),
-`.../callback`, and `.../status` (connect-state + disconnect). `TODO(production)`:
-per-user tokens in a Canadian-controlled secrets manager — never a file or the DB.
+holding the consent URL and code/refresh exchange. Token storage is shared by
+`src/lib/email/accountStore.ts`: a per-user, per-provider **gitignored** file
+(`.citadel-secrets/{google,microsoft}-<userId>.json`) holding a **list of
+accounts** (P5.5 multi-account) — each with its own `accountId` (the lowercased
+email), email, and tokens. The store migrates a legacy single-token file into a
+one-element list on read, so already-connected users never re-auth. Provider
+payload parsing is pure and unit-tested (`gmailParse.ts`, `graphParse.ts`), and
+`sourceId` is namespaced per account (`gmail:<accountId>:<msgid>`) so two
+accounts never collide. The sign-in routes mirror each other:
+`src/app/api/auth/{google,microsoft}` (start — `prompt=select_account` so a
+second account can be added), `.../callback`, and `.../status`
+(GET lists accounts; DELETE`?accountId=` disconnects one, or all when omitted).
+`getEmailSource` returns a **`CompositeSource`** that merges every connected
+account across Gmail + Microsoft. `TODO(production)`: per-user tokens in a
+Canadian-controlled secrets manager — never a file or the DB; an account cap on
+the free tier (P12).
 
 ### 2. `AIProvider` — `src/lib/ai/AIProvider.ts`
 `summarize()`, `triage()`, `draftReply(email, {tone})`, `compose(req)`,

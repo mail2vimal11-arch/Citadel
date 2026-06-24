@@ -206,8 +206,11 @@ GOOGLE_CLIENT_SECRET="..."
 Restart the app. A **"Connect Gmail"** button appears in the inbox toolbar. Click
 it, approve the consent screen (you'll see an "unverified app" notice for your own
 test app — that's expected; continue), and you'll land back on the inbox now
-reading your real mail. **"Disconnect Gmail"** deletes the stored token and returns
-to synthetic data.
+reading your real mail.
+
+You can connect **multiple accounts** — once one is connected the button becomes
+**"Add Gmail"** (and "Add Microsoft"), and every connected account is merged into
+one inbox. Each shows as a chip with its own **✕** to disconnect just that account.
 
 Tuning (optional, in `.env`): `EMAIL_SOURCE` (`auto` | `sample` | `gmail` |
 `microsoft`) and `GMAIL_MAX_MESSAGES` (how many recent messages to pull).

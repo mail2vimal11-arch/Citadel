@@ -29,17 +29,6 @@ _Last updated: 2026-06-23_
   endpoint.
 - **Status:** Open (enhancement).
 
-### BUG-005 — One mailbox per provider (no multi-account)
-- **Severity:** Medium (feature gap)
-- **Where:** `src/lib/email/googleAuth.ts` / `microsoftAuth.ts` — the token is one
-  file per provider per user (`google-<userId>.json`), so connecting a second
-  Gmail **overwrites** the first. Max one Gmail + one Microsoft per user.
-- **Symptom:** can't add work + personal Gmail (or multiple Outlook tenants).
-- **Fix:** **BUILD_PLAN P5.5 (Multi-account mailbox)** — per-account token list +
-  "Add account" UI + a composite source that merges accounts (sourceIds
-  namespaced per account). Planned, not yet built.
-- **Status:** Open (planned — P5.5).
-
 ### BUG-004 — Residual Next.js security advisories
 - **Severity:** Low (for this prototype — issues are DoS / image-optimizer /
   middleware / cache-poisoning, none exercised by this app)
@@ -51,6 +40,14 @@ _Last updated: 2026-06-23_
 ---
 
 ## Resolved
+
+### BUG-006 — One mailbox per provider (no multi-account)
+- **Resolved 2026-06-24 (P5.5).** Tokens were one file per provider per user, so
+  a second Gmail/Microsoft connect overwrote the first. Now a shared
+  `accountStore` keeps a per-account list (legacy file migrated on read), the
+  OAuth start uses `prompt=select_account`, and a `CompositeSource` merges every
+  connected account into one inbox (sourceIds namespaced per account). Inbox shows
+  per-account chips + Add buttons.
 
 ### BUG-005 — Light-on-dark UI glitches after the dark redesign
 - **Resolved 2026-06-23.** After moving to the dark Superhuman-style theme, two
@@ -79,12 +76,15 @@ _Last updated: 2026-06-23_
 
 ## By design (not bugs — documented prototype limits)
 
-- **`LocalKeyVault` is insecure** — per-item keys are stored base64 in the **same**
-  SQLite file as the ciphertext. Demonstrates the crypto-shredding lifecycle only.
-  `TODO(production)`: Canadian-controlled HSM/KMS.
-- **Forget is lazy** — `runForgetSweep()` runs on inbox/audit reads, not via a
-  background scheduler. `TODO(production)`: reliable scheduled job + storage-layer
-  enforcement.
+- **Key custody is local** — the default `KmsKeyVault` does envelope encryption
+  with the KEK in `KMS_MASTER_KEY` / a gitignored file (keys apart from data, DB
+  holds only ciphertext). The insecure co-located `LocalKeyVault` remains only
+  under `KEY_VAULT=local`. `TODO(production)`: a Canadian-controlled HSM/KMS
+  behind the `KmsClient` seam (P2 shipped the seam, not the managed KMS).
+- **Forget runs on a timer, but storage isn't Postgres yet** — a background
+  scheduler (P3) sweeps all users on an interval (lazy on-read kept as a
+  backstop). `TODO(production)`: Canadian-region managed Postgres + single-leader
+  scheduling for multi-instance deploys.
 - **Hosting is not Canadian (yet)** — the demo VPS (Hostinger) is US-based. Acceptable
   only because data is synthetic. `TODO(production)`: Canadian-region host.
 - **"Reset demo" button** exists for the demo only — real lifecycle is governed solely

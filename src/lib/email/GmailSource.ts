@@ -1,6 +1,6 @@
 import type { EmailSource } from "./EmailSource";
 import type { RawEmail } from "@/lib/types";
-import { getAccessToken } from "./googleAuth";
+import { getAccessToken, googleAccounts } from "./googleAuth";
 import { toRawEmail, type GmailMessage } from "./gmailParse";
 
 // ============================================================================
@@ -28,7 +28,22 @@ export class GmailSource implements EmailSource {
   constructor(private readonly userId: string) {}
 
   async listEmails(): Promise<RawEmail[]> {
-    const token = await getAccessToken(this.userId);
+    // Merge the most recent inbox messages from EVERY connected Gmail account.
+    const accounts = await googleAccounts(this.userId);
+    const emails: RawEmail[] = [];
+    for (const acct of accounts) {
+      try {
+        emails.push(...(await this.listForAccount(acct.accountId)));
+      } catch {
+        // One bad account shouldn't sink the whole inbox; skip it.
+        continue;
+      }
+    }
+    return emails;
+  }
+
+  private async listForAccount(accountId: string): Promise<RawEmail[]> {
+    const token = await getAccessToken(this.userId, accountId);
     const auth = { Authorization: `Bearer ${token}` };
 
     // 1) List recent message ids in the inbox.
@@ -40,12 +55,12 @@ export class GmailSource implements EmailSource {
     const list = (await listRes.json()) as { messages?: { id: string }[] };
     const ids = (list.messages ?? []).map((m) => m.id);
 
-    // 2) Fetch each full message and map it into the RawEmail shape.
+    // 2) Fetch each full message and map it, namespaced by account.
     const emails: RawEmail[] = [];
     for (const id of ids) {
       const msgRes = await fetch(`${GMAIL}/messages/${id}?format=full`, { headers: auth });
       if (!msgRes.ok) continue; // skip an unreadable message rather than fail the batch
-      emails.push(toRawEmail((await msgRes.json()) as GmailMessage));
+      emails.push(toRawEmail((await msgRes.json()) as GmailMessage, accountId));
     }
     return emails;
   }

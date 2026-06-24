@@ -44,14 +44,9 @@ export default function InboxPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState<{ kind: "ok" | "info"; text: string } | null>(null);
-  const [gmail, setGmail] = useState<{ configured: boolean; connected: boolean; email?: string }>({
-    configured: false,
-    connected: false,
-  });
-  const [m365, setM365] = useState<{ configured: boolean; connected: boolean; email?: string }>({
-    configured: false,
-    connected: false,
-  });
+  type MailStatus = { configured: boolean; accounts: { accountId: string; email?: string }[] };
+  const [gmail, setGmail] = useState<MailStatus>({ configured: false, accounts: [] });
+  const [m365, setM365] = useState<MailStatus>({ configured: false, accounts: [] });
 
   // Reading UX state.
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -225,20 +220,20 @@ export default function InboxPage() {
     setFlash({ kind: "info", text: `Logged out & forgot ${data.forgotten} item(s). Keys destroyed.` });
   };
 
-  const disconnectGmail = async () => {
+  const disconnectGmail = async (accountId: string) => {
     setBusy(true);
-    await fetch("/api/auth/google/status", { method: "DELETE" });
+    await fetch(`/api/auth/google/status?accountId=${encodeURIComponent(accountId)}`, { method: "DELETE" });
     await loadGmail();
     setBusy(false);
-    setFlash({ kind: "info", text: "Gmail disconnected. Back to synthetic demo data." });
+    setFlash({ kind: "info", text: "Gmail account disconnected." });
   };
 
-  const disconnectM365 = async () => {
+  const disconnectM365 = async (accountId: string) => {
     setBusy(true);
-    await fetch("/api/auth/microsoft/status", { method: "DELETE" });
+    await fetch(`/api/auth/microsoft/status?accountId=${encodeURIComponent(accountId)}`, { method: "DELETE" });
     await loadM365();
     setBusy(false);
-    setFlash({ kind: "info", text: "Microsoft 365 disconnected. Back to synthetic demo data." });
+    setFlash({ kind: "info", text: "Microsoft 365 account disconnected." });
   };
 
   const resetDemo = async () => {
@@ -311,14 +306,16 @@ export default function InboxPage() {
   }, [select, load, markDone]); // handlers are stable; state is read via ref
 
   // ---- Render --------------------------------------------------------------
-  const liveMailbox = gmail.connected ? "Gmail" : m365.connected ? "Microsoft 365" : null;
-  const liveEmail = gmail.connected ? gmail.email : m365.email;
+  const connectedCount = gmail.accounts.length + m365.accounts.length;
+  const liveMailbox = connectedCount > 0;
 
   return (
     <div>
       {liveMailbox ? (
         <div className="banner warn">
-          <strong>Connected to a real {liveMailbox} ({liveEmail ?? "your account"}) — read-only.</strong>{" "}
+          <strong>
+            Connected to {connectedCount} real mailbox{connectedCount === 1 ? "" : "es"} — read-only.
+          </strong>{" "}
           Message bodies are processed <strong>in memory only</strong> and never stored; only the
           encrypted AI-derived summary/triage/draft is kept. The AI still runs{" "}
           <strong>100% locally</strong>. ⚠️ Encryption keys here are <strong>demo-grade</strong> —
@@ -357,30 +354,53 @@ export default function InboxPage() {
             Reset demo
           </button>
         )}
-        {gmail.configured &&
-          (gmail.connected ? (
-            <button className="btn-secondary" onClick={disconnectGmail} disabled={busy}>
-              Disconnect Gmail
-            </button>
-          ) : (
-            <a className="btn-secondary" href="/api/auth/google">
-              Connect Gmail
-            </a>
-          ))}
-        {m365.configured &&
-          (m365.connected ? (
-            <button className="btn-secondary" onClick={disconnectM365} disabled={busy}>
-              Disconnect Microsoft
-            </button>
-          ) : (
-            <a className="btn-secondary" href="/api/auth/microsoft">
-              Connect Microsoft
-            </a>
-          ))}
+        {gmail.configured && (
+          <a className="btn-secondary" href="/api/auth/google">
+            {gmail.accounts.length ? "Add Gmail" : "Connect Gmail"}
+          </a>
+        )}
+        {m365.configured && (
+          <a className="btn-secondary" href="/api/auth/microsoft">
+            {m365.accounts.length ? "Add Microsoft" : "Connect Microsoft"}
+          </a>
+        )}
         <span className="note">
           {activeCount} active · {forgottenCount} forgotten{doneCount > 0 ? ` · ${doneCount} done` : ""}
         </span>
       </div>
+
+      {connectedCount > 0 && (
+        <div className="accounts">
+          {gmail.accounts.map((a) => (
+            <span key={`g-${a.accountId}`} className="account-chip">
+              <span className="account-prov">Gmail</span>
+              {a.email ?? a.accountId}
+              <button
+                className="account-x"
+                title="Disconnect this account"
+                onClick={() => disconnectGmail(a.accountId)}
+                disabled={busy}
+              >
+                ✕
+              </button>
+            </span>
+          ))}
+          {m365.accounts.map((a) => (
+            <span key={`m-${a.accountId}`} className="account-chip">
+              <span className="account-prov">Microsoft</span>
+              {a.email ?? a.accountId}
+              <button
+                className="account-x"
+                title="Disconnect this account"
+                onClick={() => disconnectM365(a.accountId)}
+                disabled={busy}
+              >
+                ✕
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
 
       {flash && <div className={`flash ${flash.kind}`}>{flash.text}</div>}
 
@@ -400,7 +420,7 @@ export default function InboxPage() {
       ) : items.length === 0 ? (
         <div className="empty">
           No items yet. Click <strong>“Process inbox”</strong> to run the AI over{" "}
-          {liveMailbox ? `your recent ${liveMailbox} messages` : "the 15 synthetic sample emails"}.
+          {liveMailbox ? "your recent messages" : "the 15 synthetic sample emails"}.
         </div>
       ) : (
         <div className="inbox-layout">
