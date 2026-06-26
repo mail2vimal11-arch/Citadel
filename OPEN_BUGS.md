@@ -22,12 +22,11 @@ _Last updated: 2026-06-23_
 
 ### BUG-003 — No progress indicator for long processing runs
 - **Severity:** Low (UX)
-- **Where:** `src/app/page.tsx` + `/api/process` (single blocking request).
-- **Symptom:** on slow hosts the button sits on "Working…" with no per-email progress;
-  a very long request can appear to stall.
-- **Fix idea:** stream progress (process per-email and report counts) or poll a status
-  endpoint.
-- **Status:** Open (enhancement).
+- **Resolved 2026-06-26.** `/api/process` now **streams NDJSON** progress
+  (`{type:progress,current,total}` per email → `done`/`error`); the inbox renders a
+  live "Processing X of N…" bar via a pipeline `onProgress` callback. Also added
+  graceful error handling so a failed run shows a clear message instead of hanging.
+- **Status:** Resolved.
 
 ### BUG-008 — Connected accounts need reconnect to send
 - **Severity:** Low (one-time, expected)

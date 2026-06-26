@@ -7,6 +7,12 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **Hardening: live "Process inbox" progress + graceful errors (BUG-003).**
+  `/api/process` now **streams** newline-delimited JSON progress
+  (`{type:progress,current,total}` per email, then `done`/`error`) via a pipeline
+  `onProgress` callback, and the inbox shows a live "Processing X of N…" bar
+  instead of sitting silently on "Working…" for minutes on a CPU host. Failures
+  now surface a clear message rather than hanging.
 - **Theme: copper → champagne-gold (premium dark).** Reskinned the brand accent
   from purple→pink to a richer copper→antique-gold on warm-espresso surfaces with
   ivory ink and faint brass hairlines — a "private-vault" premium feel for the

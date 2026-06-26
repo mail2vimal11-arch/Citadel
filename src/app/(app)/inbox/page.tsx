@@ -69,6 +69,7 @@ export default function InboxPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState<{ kind: "ok" | "info"; text: string } | null>(null);
+  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
   type MailStatus = { configured: boolean; accounts: { accountId: string; email?: string }[] };
   const [gmail, setGmail] = useState<MailStatus>({ configured: false, accounts: [] });
   const [m365, setM365] = useState<MailStatus>({ configured: false, accounts: [] });
@@ -232,20 +233,58 @@ export default function InboxPage() {
   const process = async () => {
     setBusy(true);
     setFlash(null);
-    const res = await fetch("/api/process", { method: "POST" });
-    const data = await res.json();
-    await load();
-    setBusy(false);
-    setFlash({
-      kind: data.capped ? "info" : "ok",
-      text:
-        (data.processed > 0
-          ? `Processed ${data.processed} new email(s) into encrypted derived data.`
-          : `No new emails to process (all ${data.skipped} already done).`) +
-        (data.capped ? ` Free plan reached its 2-email cap — upgrade to Full in Settings for unlimited.` : "") +
-        (data.emailSource ? ` Source: ${data.emailSource}.` : "") +
-        (data.aiProvider ? ` AI: ${data.aiProvider}.` : ""),
-    });
+    setProgress(null);
+    try {
+      const res = await fetch("/api/process", { method: "POST" });
+      if (!res.ok || !res.body) throw new Error(`Process failed (${res.status})`);
+      // Read the NDJSON progress stream: {type:progress|done|error}.
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      type Done = { processed: number; skipped: number; capped: boolean; emailSource?: string; aiProvider?: string };
+      let done: Done | null = null;
+      let errMsg: string | null = null;
+      for (;;) {
+        const { done: streamDone, value } = await reader.read();
+        if (streamDone) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          let ev: { type?: string; current?: number; total?: number; error?: string } & Record<string, unknown>;
+          try {
+            ev = JSON.parse(line);
+          } catch {
+            continue;
+          }
+          if (ev.type === "progress") setProgress({ current: ev.current ?? 0, total: ev.total ?? 0 });
+          else if (ev.type === "done") done = ev as unknown as Done;
+          else if (ev.type === "error") errMsg = ev.error ?? "Processing failed.";
+        }
+      }
+      setProgress(null);
+      await load();
+      if (errMsg) {
+        setFlash({ kind: "info", text: `Couldn't process the inbox: ${errMsg}` });
+      } else if (done) {
+        setFlash({
+          kind: done.capped ? "info" : "ok",
+          text:
+            (done.processed > 0
+              ? `Processed ${done.processed} new email(s) into encrypted derived data.`
+              : `No new emails to process (all ${done.skipped} already done).`) +
+            (done.capped ? ` Free plan reached its 2-email cap — upgrade to Full in Settings for unlimited.` : "") +
+            (done.emailSource ? ` Source: ${done.emailSource}.` : "") +
+            (done.aiProvider ? ` AI: ${done.aiProvider}.` : ""),
+        });
+      }
+    } catch {
+      setProgress(null);
+      setFlash({ kind: "info", text: "Couldn’t reach the processor — check your connection (and that Ollama is running) and try again." });
+    } finally {
+      setBusy(false);
+    }
   };
 
   const forgetOne = async (id: string) => {
@@ -577,6 +616,17 @@ export default function InboxPage() {
               </button>
             </span>
           ))}
+        </div>
+      )}
+
+      {progress && (
+        <div className="proc-progress">
+          <div className="proc-progress-label">
+            Processing {progress.current} of {progress.total} email{progress.total === 1 ? "" : "s"} locally — the AI runs on your own machine, so this can take a moment on CPU…
+          </div>
+          <div className="plan-meter" aria-hidden>
+            <span style={{ width: `${progress.total ? (progress.current / progress.total) * 100 : 0}%` }} />
+          </div>
         </div>
       )}
 

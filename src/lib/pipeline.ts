@@ -18,7 +18,8 @@ import type { DerivedPayload } from "@/lib/types";
 // in-memory only and is NEVER written to the database.
 export async function processInbox(
   userId: string,
-  source?: EmailSource
+  source?: EmailSource,
+  onProgress?: (p: { current: number; total: number }) => void
 ): Promise<{ processed: number; skipped: number; capped: boolean; plan: string; aiProvider: string; emailSource: string }> {
   const ai = await resolveAIProvider();
   const vault = getKeyVault();
@@ -36,7 +37,11 @@ export async function processInbox(
   let skipped = 0;
   let capped = false;
 
-  for (const email of emails) {
+  for (let i = 0; i < emails.length; i++) {
+    const email = emails[i];
+    // Report liveness BEFORE the (slow, CPU-bound) AI work for this email.
+    onProgress?.({ current: i + 1, total: emails.length });
+
     // Stop once the plan's email cap is reached (free = 2). Already-stored items
     // still show; we just don't derive new ones beyond the cap.
     if (limits.emailCap !== null && activeCount >= limits.emailCap) {
