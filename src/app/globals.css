@@ -1,22 +1,22 @@
 :root {
-  /* Surfaces — near-black, Superhuman-style */
-  --bg: #08080a;
-  --panel: #141418;
-  --panel-2: #1c1c22;
+  /* Surfaces — warm near-black (espresso/walnut depth so gold reads as brass) */
+  --bg: #0a0806;
+  --panel: #15120d;
+  --panel-2: #1e1912;
 
-  /* Ink */
-  --ink: #f5f5f7;
-  --ink-2: rgba(255, 255, 255, 0.72);
-  --muted: rgba(255, 255, 255, 0.5);
-  --line: rgba(255, 255, 255, 0.09);
-  --line-2: rgba(255, 255, 255, 0.14);
+  /* Ink — warm ivory, not cold white */
+  --ink: #f4f0e8;
+  --ink-2: rgba(248, 243, 234, 0.72);
+  --muted: rgba(244, 238, 226, 0.48);
+  --line: rgba(228, 202, 156, 0.1);
+  --line-2: rgba(230, 206, 162, 0.15);
 
-  /* Brand accent — premium copper -> champagne gold */
-  --accent: #be7b3f;
-  --accent-2: #e8c57a;
-  --accent-ink: #e8cb86;
-  --accent-soft: rgba(190, 123, 63, 0.16);
-  --ring: 0 0 0 3px rgba(190, 123, 63, 0.32);
+  /* Brand accent — rich copper -> antique champagne gold (restrained, not bright) */
+  --accent: #c07a37;
+  --accent-2: #e0bd78;
+  --accent-ink: #e6c886;
+  --accent-soft: rgba(200, 140, 70, 0.15);
+  --ring: 0 0 0 3px rgba(200, 150, 80, 0.3);
 
   /* Priority + status (Superhuman feature palette) */
   --urgent: #ff91a5;
@@ -44,9 +44,9 @@ html, body {
   background: var(--bg);
   /* Ambient copper / gold glows — warm, premium, vault-like. */
   background-image:
-    radial-gradient(620px 420px at 18% -6%, rgba(190, 123, 63, 0.28), rgba(8, 8, 10, 0) 62%),
-    radial-gradient(680px 440px at 86% -10%, rgba(232, 197, 122, 0.18), rgba(8, 8, 10, 0) 60%),
-    radial-gradient(820px 520px at 50% -2%, rgba(200, 150, 80, 0.10), rgba(8, 8, 10, 0) 64%);
+    radial-gradient(620px 420px at 18% -6%, rgba(176, 112, 56, 0.24), rgba(10, 8, 6, 0) 62%),
+    radial-gradient(680px 440px at 86% -10%, rgba(214, 174, 104, 0.14), rgba(10, 8, 6, 0) 60%),
+    radial-gradient(820px 520px at 50% -2%, rgba(150, 104, 58, 0.09), rgba(10, 8, 6, 0) 64%);
   background-attachment: fixed;
   font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI Variable",
     "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", sans-serif;
