@@ -7,12 +7,19 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
-- **Hardening: live "Process inbox" progress + graceful errors (BUG-003).**
-  `/api/process` now **streams** newline-delimited JSON progress
-  (`{type:progress,current,total}` per email, then `done`/`error`) via a pipeline
-  `onProgress` callback, and the inbox shows a live "Processing X of N…" bar
-  instead of sitting silently on "Working…" for minutes on a CPU host. Failures
-  now surface a clear message rather than hanging.
+- **Hardening pass (robustness + mobile).**
+  - **Live "Process inbox" progress (BUG-003):** `/api/process` now **streams**
+    NDJSON (`{type:progress,current,total}` per email → `done`/`error`) via a
+    pipeline `onProgress` callback; the inbox shows a live "Processing X of N…"
+    bar instead of sitting silently on "Working…" for minutes on a CPU host.
+  - **No more hung buttons:** every async action — process, forget/forget-all,
+    disconnect, reset, search, Ask AI, Write-with-AI, send — now resets its
+    busy/loading state in `finally` and surfaces a clear message on failure
+    (network drop, server error) instead of spinning forever. The inbox/audit
+    loaders fail to a **Retry**/empty state, not an infinite "Loading…".
+  - **Mobile pass:** flex children may shrink (no accidental horizontal scroll),
+    the upgrade-banner CTA goes full-width, and the top nav / reading pane /
+    compose modal tighten on small screens.
 - **Theme: copper → champagne-gold (premium dark).** Reskinned the brand accent
   from purple→pink to a richer copper→antique-gold on warm-espresso surfaces with
   ivory ink and faint brass hairlines — a "private-vault" premium feel for the

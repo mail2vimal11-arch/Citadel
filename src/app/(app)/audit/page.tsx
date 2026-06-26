@@ -25,10 +25,15 @@ export default function AuditPage() {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/audit", { cache: "no-store" });
-    const data = await res.json();
-    setEvents(data.events);
-    setLoading(false);
+    try {
+      const res = await fetch("/api/audit", { cache: "no-store" });
+      const data = await res.json();
+      setEvents(data.events ?? []);
+    } catch {
+      setEvents([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {

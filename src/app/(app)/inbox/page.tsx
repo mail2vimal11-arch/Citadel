@@ -94,23 +94,40 @@ export default function InboxPage() {
   const [addOpen, setAddOpen] = useState(false); // "Add account" provider chooser
 
   // ---- Data loading --------------------------------------------------------
+  const [loadError, setLoadError] = useState(false);
+
   const loadGmail = useCallback(async () => {
-    const res = await fetch("/api/auth/google/status", { cache: "no-store" });
-    setGmail(await res.json());
+    try {
+      const res = await fetch("/api/auth/google/status", { cache: "no-store" });
+      if (res.ok) setGmail(await res.json());
+    } catch {
+      /* connector status is non-critical; leave as-is */
+    }
   }, []);
 
   const loadM365 = useCallback(async () => {
-    const res = await fetch("/api/auth/microsoft/status", { cache: "no-store" });
-    setM365(await res.json());
+    try {
+      const res = await fetch("/api/auth/microsoft/status", { cache: "no-store" });
+      if (res.ok) setM365(await res.json());
+    } catch {
+      /* non-critical */
+    }
   }, []);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/items", { cache: "no-store" });
-    const data = await res.json();
-    setItems(data.items);
-    setForgetInterval(data.forgetInterval);
-    if (data.plan) setPlan(data.plan);
-    setLoading(false);
+    try {
+      const res = await fetch("/api/items", { cache: "no-store" });
+      if (!res.ok) throw new Error(String(res.status));
+      const data = await res.json();
+      setItems(data.items);
+      setForgetInterval(data.forgetInterval);
+      if (data.plan) setPlan(data.plan);
+      setLoadError(false);
+    } catch {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -287,54 +304,64 @@ export default function InboxPage() {
     }
   };
 
-  const forgetOne = async (id: string) => {
+  // Wrap an async action so `busy` always resets and failures surface a message.
+  const runAction = async (fn: () => Promise<void>, failText = "Something went wrong — please try again.") => {
     setBusy(true);
-    await fetch("/api/forget", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ itemId: id }),
-    });
-    await load();
-    setBusy(false);
-    setFlash({ kind: "info", text: "Item forgotten — its key was destroyed. See the Audit log." });
+    try {
+      await fn();
+    } catch {
+      setFlash({ kind: "info", text: failText });
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const forgetAll = async () => {
-    setBusy(true);
-    const res = await fetch("/api/forget", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ all: true }),
-    });
-    const data = await res.json();
-    await load();
-    setBusy(false);
-    setFlash({ kind: "info", text: `Logged out & forgot ${data.forgotten} item(s). Keys destroyed.` });
-  };
+  const forgetOne = (id: string) =>
+    runAction(async () => {
+      const res = await fetch("/api/forget", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ itemId: id }),
+      });
+      if (!res.ok) throw new Error();
+      await load();
+      setFlash({ kind: "info", text: "Item forgotten — its key was destroyed. See the Audit log." });
+    }, "Couldn’t forget that item — please try again.");
 
-  const disconnectGmail = async (accountId: string) => {
-    setBusy(true);
-    await fetch(`/api/auth/google/status?accountId=${encodeURIComponent(accountId)}`, { method: "DELETE" });
-    await loadGmail();
-    setBusy(false);
-    setFlash({ kind: "info", text: "Gmail account disconnected." });
-  };
+  const forgetAll = () =>
+    runAction(async () => {
+      const res = await fetch("/api/forget", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ all: true }),
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      await load();
+      setFlash({ kind: "info", text: `Logged out & forgot ${data.forgotten} item(s). Keys destroyed.` });
+    }, "Couldn’t forget all — please try again.");
 
-  const disconnectM365 = async (accountId: string) => {
-    setBusy(true);
-    await fetch(`/api/auth/microsoft/status?accountId=${encodeURIComponent(accountId)}`, { method: "DELETE" });
-    await loadM365();
-    setBusy(false);
-    setFlash({ kind: "info", text: "Microsoft 365 account disconnected." });
-  };
+  const disconnectGmail = (accountId: string) =>
+    runAction(async () => {
+      await fetch(`/api/auth/google/status?accountId=${encodeURIComponent(accountId)}`, { method: "DELETE" });
+      await loadGmail();
+      setFlash({ kind: "info", text: "Gmail account disconnected." });
+    }, "Couldn’t disconnect that account — please try again.");
 
-  const resetDemo = async () => {
+  const disconnectM365 = (accountId: string) =>
+    runAction(async () => {
+      await fetch(`/api/auth/microsoft/status?accountId=${encodeURIComponent(accountId)}`, { method: "DELETE" });
+      await loadM365();
+      setFlash({ kind: "info", text: "Microsoft 365 account disconnected." });
+    }, "Couldn’t disconnect that account — please try again.");
+
+  const resetDemo = () => {
     if (!confirm("Reset the demo? This wipes all derived items, keys, and audit events so you can start over.")) return;
-    setBusy(true);
-    await fetch("/api/reset", { method: "POST" });
-    await load();
-    setBusy(false);
-    setFlash({ kind: "info", text: "Demo reset. Click “Process inbox” to start again." });
+    return runAction(async () => {
+      await fetch("/api/reset", { method: "POST" });
+      await load();
+      setFlash({ kind: "info", text: "Demo reset. Click “Process inbox” to start again." });
+    }, "Couldn’t reset — please try again.");
   };
 
   // Mark the selected item "done" (client-only declutter), then advance.
@@ -646,6 +673,13 @@ export default function InboxPage() {
 
       {loading ? (
         <p className="empty">Loading…</p>
+      ) : loadError ? (
+        <div className="empty">
+          Couldn’t load your inbox.{" "}
+          <button className="btn-secondary btn-small" onClick={() => { setLoading(true); load(); }}>
+            Retry
+          </button>
+        </div>
       ) : items.length === 0 ? (
         <div className="empty">
           No items yet. Click <strong>“Process inbox”</strong> to run the AI over{" "}
@@ -827,13 +861,18 @@ function AskBox({ onPick }: { onPick: (id: string) => void }) {
     if (!q.trim()) return;
     setAsking(true);
     setResult(null);
-    const res = await fetch("/api/ask", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question: q }),
-    });
-    setResult(await res.json());
-    setAsking(false);
+    try {
+      const res = await fetch("/api/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: q }),
+      });
+      setResult(await res.json());
+    } catch {
+      setResult({ answer: "Couldn’t reach the assistant — check your connection and try again.", sources: [], aiProvider: "" });
+    } finally {
+      setAsking(false);
+    }
   };
 
   return (
@@ -974,17 +1013,22 @@ function ComposeModal({
     if (!confirm(`Send this email as ${from.email ?? from.accountId}? This is a real, outgoing message.`)) return;
     setSending(true);
     setError(null);
-    const res = await fetch("/api/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ provider: from.provider, accountId: from.accountId, to, subject, body, replyToId: init.replyToId }),
-    });
-    const d = await res.json().catch(() => ({}));
-    setSending(false);
-    if (res.ok) onSent();
-    else if (d?.needsReconnect)
-      setError(`Reconnect this ${from.provider === "gmail" ? "Gmail" : "Microsoft"} account (toolbar) to grant send permission, then try again.`);
-    else setError(d?.error ?? "Send failed.");
+    try {
+      const res = await fetch("/api/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider: from.provider, accountId: from.accountId, to, subject, body, replyToId: init.replyToId }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (res.ok) onSent();
+      else if (d?.needsReconnect)
+        setError(`Reconnect this ${from.provider === "gmail" ? "Gmail" : "Microsoft"} account (toolbar) to grant send permission, then try again.`);
+      else setError(d?.error ?? "Send failed.");
+    } catch {
+      setError("Couldn’t reach the server — check your connection and try again.");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -1091,9 +1135,14 @@ function SearchBox({
     e.preventDefault();
     if (!q.trim()) return;
     setSearching(true);
-    const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`, { cache: "no-store" });
-    setResult(await res.json());
-    setSearching(false);
+    try {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`, { cache: "no-store" });
+      setResult(await res.json());
+    } catch {
+      setResult({ mode: "keyword", provider: "", hits: [] });
+    } finally {
+      setSearching(false);
+    }
   };
 
   return (
@@ -1186,14 +1235,19 @@ function ReadingActive({
     if (!instruction.trim()) return;
     setComposing(true);
     setComposed(null);
-    const res = await fetch("/api/compose", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ instruction, itemId: item.id }),
-    });
-    const d = await res.json();
-    setComposing(false);
-    setComposed(d.draft || "(The assistant returned an empty draft.)");
+    try {
+      const res = await fetch("/api/compose", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ instruction, itemId: item.id }),
+      });
+      const d = await res.json();
+      setComposed(d.draft || "(The assistant returned an empty draft.)");
+    } catch {
+      setComposed("Couldn’t reach the assistant — check your connection and try again.");
+    } finally {
+      setComposing(false);
+    }
   };
 
   // Reset the compose box when switching to a different message.
