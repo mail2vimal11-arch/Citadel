@@ -82,9 +82,17 @@ HSM/KMS**.
 Move both the app and Apertus onto **Canadian** infrastructure.
 - App + DB in a Canadian region; Apertus served on a Canadian GPU host (Apertus 8B
   q4 needs only ~6 GB VRAM — a modest **16 GB+** modern card is plenty).
-- Candidates: ServaRica (Montréal; watch for GPU-VPS restock or use their dedicated
-  GPU box), Hostrunway (Montréal — confirm a real 16 GB+ card, not the GT730/2 GB
-  tier), BUZZ HPC (Quebec sovereign-AI cloud — strongest compliance story).
+- **Research verdict (see `COMPLIANCE.md`): jurisdiction is never the guarantee.**
+  US-owned clouds are CLOUD-Act-reachable; even non-US providers can be compelled
+  via a local subsidiary (*King v. OVH*, Ont. 2025). So the load-bearing control is
+  **keys-off-host + crypto-shred** (Phase 3), and hosting choice is a secondary,
+  best-effort layer.
+- **Interim (keeps self-hosted Apertus):** DigitalOcean **TOR1** is the cheapest
+  *verified* container ($0.76/hr RTX 4000 Ada) but US-owned + capacity-constrained;
+  **Cloudspace.ca** is Canadian-marketed but ownership unverified (diligence first);
+  **OVH BHS5** has only old V100s in Canada. **Bedrock/Azure are out** (US-owned +
+  can't run Apertus). Sovereign end-state candidates: ServaRica, Hostrunway, BUZZ
+  HPC (Québec).
 - The single seam to repoint is `OLLAMA_BASE_URL` in `src/lib/ai/ollamaClient.ts`.
 - **Effort:** M · **Blocks revenue:** yes (data residency is the pitch) · **Infra:**
   ~$40–150+/mo for a GPU host, depending on card.

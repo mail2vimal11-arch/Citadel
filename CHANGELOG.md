@@ -7,6 +7,21 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **Theme: copper → champagne-gold (premium dark).** Reskinned the brand accent
+  from purple→pink to a richer copper→antique-gold on warm-espresso surfaces with
+  ivory ink and faint brass hairlines — a "private-vault" premium feel for the
+  regulated-professional audience. CSS-only.
+- **`COMPLIANCE.md` + sovereignty posture (from two verified research passes).**
+  Established that **no cloud jurisdiction is immune** (US-owned → CLOUD Act; even
+  non-US providers are reachable via a local subsidiary — *King v. OVH*, Ont.
+  2025), so the load-bearing guarantee is **technical**: keys held **off the
+  compute host** + crypto-shredding, so a host/court can only obtain unreadable
+  ciphertext. **Retired the "notify all clients & delete accounts" plan** (gag
+  orders make notification unreliable; reactive deletion risks obstruction).
+  Added an interim-host ranking (DigitalOcean TOR1 verified; Cloudspace pending
+  ownership diligence; OVH BHS5 old-GPU; Bedrock/Azure disqualified — US-owned +
+  can't run Apertus). Tightened the ARCHITECTURE KMS `TODO(production)` to specify
+  an **off-host** external key manager, and updated ROADMAP Phase 4.
 - **P12 (gating half) — Freemium limits.** Added a per-user **plan** (free | full)
   and enforced the **free cap in the pipeline**: free = a real inbox capped at
   **2 emails** with **limited AI text** (2000 chars); full = unlimited. Processing
