@@ -7,6 +7,16 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **P12 charging — ready-to-flip Stripe.** Completed the monetization wiring
+  behind the gating: a `PaymentProvider` seam (`src/lib/payments/`) with a Stripe
+  impl, `POST /api/billing/checkout` (hosted Checkout — $15/mo or $10/mo annual)
+  and a signature-verified `POST /api/billing/webhook` that maps a paid
+  checkout → Full / cancelled subscription → Free and calls `setPlan` (with a
+  content-free audit). The event→plan mapping is pure + unit-tested. It's
+  **dormant in demo mode** — with no `STRIPE_*` env the checkout 400s, the webhook
+  503s, and Settings keeps the demo plan switch; the Stripe SDK is lazy-imported
+  so it never enters a client/edge bundle. Per ROADMAP/COMPLIANCE.md, go LIVE only
+  after the keys-off-host hosting move. 8 new tests (156 total green).
 - **Hardening pass (robustness + mobile).**
   - **Live "Process inbox" progress (BUG-003):** `/api/process` now **streams**
     NDJSON (`{type:progress,current,total}` per email → `done`/`error`) via a

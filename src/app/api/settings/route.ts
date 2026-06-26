@@ -14,6 +14,7 @@ import { recordAudit } from "@/lib/audit";
 import { requireUserId } from "@/lib/apiUser";
 import { TONES, normalizeTone } from "@/lib/ai/prompts";
 import { PLANS, normalizePlan } from "@/lib/billing";
+import { paymentsConfigured } from "@/lib/payments";
 import type { ForgetInterval } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -34,6 +35,7 @@ export async function GET() {
     tones: TONES.map((t) => ({ value: t.value, label: t.label })),
     plan,
     plans: PLANS,
+    billingConfigured: paymentsConfigured(),
   });
 }
 

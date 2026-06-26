@@ -13,6 +13,7 @@ export default function SettingsPage() {
   const [tones, setTones] = useState<ToneOption[]>([]);
   const [tone, setTone] = useState<string>("professional");
   const [plan, setPlan] = useState<string>("free");
+  const [billingConfigured, setBillingConfigured] = useState(false);
   const [saved, setSaved] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   // Snippets (P9) — reusable templates, stored client-side, inserted in the
@@ -30,13 +31,37 @@ export default function SettingsPage() {
         setTones(d.tones ?? []);
         setTone(d.tone ?? "professional");
         setPlan(d.plan ?? "free");
+        setBillingConfigured(Boolean(d.billingConfigured));
       });
     try {
       setSnippets(JSON.parse(localStorage.getItem(SNIPPETS_KEY) ?? "[]"));
     } catch {
       setSnippets([]);
     }
+    // Returned from a successful Stripe Checkout.
+    if (new URLSearchParams(window.location.search).get("upgraded")) {
+      setSaved("Thanks — your upgrade is processing. Full unlocks as soon as Stripe confirms.");
+      window.history.replaceState({}, "", window.location.pathname);
+    }
   }, []);
+
+  const startCheckout = async (cycle: "monthly" | "annual") => {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cycle }),
+      });
+      const d = await res.json();
+      if (d?.url) window.location.href = d.url;
+      else setSaved(d?.error ?? "Couldn’t start checkout.");
+    } catch {
+      setSaved("Couldn’t reach checkout — please try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const persistSnippets = (next: Snippet[]) => {
     setSnippets(next);
@@ -196,24 +221,49 @@ export default function SettingsPage() {
       <p className="note" style={{ marginTop: -16, marginBottom: 14 }}>
         <strong style={{ color: "var(--ink)" }}>Free</strong> = a real inbox capped at
         <strong> 2 emails</strong> with limited text. <strong style={{ color: "var(--ink)" }}>Full</strong> = unlimited.
-        This is a <strong>demo switch</strong> — real billing (Stripe) is deferred until the
-        Canadian-hosting &amp; managed-KMS gates are live (see <code>ROADMAP.md</code>).
       </p>
-      {["free", "full"].map((value) => (
-        <label key={value} className={`radio-row ${plan === value ? "selected" : ""}`}>
-          <input
-            type="radio"
-            name="plan"
-            value={value}
-            checked={plan === value}
-            onChange={() => savePlan(value)}
-            disabled={busy}
-          />
-          <span style={{ textTransform: "capitalize" }}>
-            {value} {value === "free" ? "— 2 emails, limited text" : "— unlimited"}
-          </span>
-        </label>
-      ))}
+
+      {billingConfigured ? (
+        // Real Stripe checkout (live when STRIPE_* keys are set).
+        plan === "full" ? (
+          <div className="radio-row selected" style={{ cursor: "default" }}>
+            <span>✓ You’re on <strong>Full</strong> — unlimited. Manage or cancel via the Stripe receipt email.</span>
+          </div>
+        ) : (
+          <div className="toolbar" style={{ marginBottom: 0 }}>
+            <button className="btn-primary" onClick={() => startCheckout("monthly")} disabled={busy}>
+              Upgrade — $15/mo
+            </button>
+            <button className="btn-secondary" onClick={() => startCheckout("annual")} disabled={busy}>
+              or $10/mo billed annually
+            </button>
+          </div>
+        )
+      ) : (
+        // Demo switch (no Stripe keys configured) — dev/testing only.
+        <>
+          <p className="note" style={{ marginTop: -6, marginBottom: 12 }}>
+            <strong>Demo switch</strong> — real billing (Stripe) is wired but dormant; it goes live
+            once Stripe keys are set and the Canadian-hosting / KMS gates are real (see
+            <code> COMPLIANCE.md</code>).
+          </p>
+          {["free", "full"].map((value) => (
+            <label key={value} className={`radio-row ${plan === value ? "selected" : ""}`}>
+              <input
+                type="radio"
+                name="plan"
+                value={value}
+                checked={plan === value}
+                onChange={() => savePlan(value)}
+                disabled={busy}
+              />
+              <span style={{ textTransform: "capitalize" }}>
+                {value} {value === "free" ? "— 2 emails, limited text" : "— unlimited"}
+              </span>
+            </label>
+          ))}
+        </>
+      )}
 
       {saved && <div className="flash ok" style={{ marginTop: 14 }}>{saved}</div>}
     </div>

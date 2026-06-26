@@ -295,21 +295,25 @@ T-shirt size (S/M/L). "Gate" phases unblock revenue and should not be skipped.
 
 ## Stage E — Monetize
 
-### P12 · Billing & freemium gating  · M · **Gate** · 🟡 GATING DONE (2026-06-24)
+### P12 · Billing & freemium gating  · M · **Gate** · ✅ DONE (ready-to-flip) 2026-06-26
 - **Goal:** the cash register (only after the sovereignty gates make the promise true).
-- **Built (gating half):** a per-user `plan` (free | full) on `Setting`; pure,
-  tested limits (`src/lib/billing.ts`: free = 2 emails / 2000 AI chars, full =
-  unlimited). The pipeline **enforces the cap** (stops at the limit, reports
-  `capped`) and **truncates AI text** on free; the inbox flash and a Settings
-  **Plan** section surface it. A demo plan switch (Settings) shows the gating.
-- **Deferred (charging half):** real **Stripe** billing + webhooks are NOT built —
-  per ROADMAP we don't take money until the Canadian-hosting + managed-KMS gates
-  are live. The plan-state seam is ready; `// TODO(production):` plan changes come
-  from a verified Stripe webhook, never a client POST (today's demo switch).
-- **Tested:** `billing` limits + an end-to-end pipeline test (free stops at 2 +
-  `capped`; full lifts it). 147 green.
-- **Docs:** BUILD_PLAN, CHANGELOG, COMPETITIVE, CLAUDE.
-- **Done-when (charging):** still gated on the sovereignty work — see ROADMAP.
+- **Gating half:** a per-user `plan` (free | full) on `Setting`; pure, tested
+  limits (`src/lib/billing.ts`: free = 2 emails / 2000 AI chars, full = unlimited).
+  The pipeline **enforces the cap** and **truncates AI text** on free; the inbox
+  upgrade banner + a Settings **Plan** section surface it.
+- **Charging half (ready-to-flip):** a `PaymentProvider` seam
+  (`src/lib/payments/`) with a **Stripe** impl — `POST /api/billing/checkout`
+  (hosted Checkout, $15/mo or $10/mo annual) and `POST /api/billing/webhook`
+  (signature-verified → `setPlan` + content-free audit). The pure event→plan
+  mapping (`planFromStripeEvent`) is unit-tested. **Dormant in demo mode:** with
+  no `STRIPE_*` env the seam returns null, checkout 400s, the webhook 503s, and
+  Settings keeps the demo switch. The Stripe SDK is lazy-imported so it never
+  enters a non-server bundle.
+- **Tested:** billing limits + pipeline cap (free stops at 2; full lifts it) +
+  payment event→plan mapping + `paymentsConfigured`. 156 green; `tsc` + build clean.
+- **Docs:** BUILD_PLAN, CHANGELOG, COMPETITIVE, CLAUDE, README; `STRIPE_*` in env.
+- **Done-when (LIVE charging):** flip the `STRIPE_*` keys **after** the
+  keys-off-host hosting move — see ROADMAP / COMPLIANCE.md.
 
 ---
 

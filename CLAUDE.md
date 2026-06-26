@@ -129,11 +129,12 @@ scopes (`gmail.send`/`Mail.Send` — existing accounts must reconnect), a
 content-free `SENT` audit event, and **threaded replies** (`sendReply`: Gmail
 `Message-Id`/`threadId`, Microsoft Graph `createReply`). Sending keeps the
 privacy promise (nothing stored; the promise is residency + minimization +
-forgetting, not read-only). **P12 (freemium gating)** is half-done: a per-user
-`plan` (free|full) on `Setting` + pure tested `src/lib/billing.ts` limits, with
-the **pipeline enforcing the free cap** (2 emails / limited text) and a Settings
-Plan demo switch — **Stripe charging is deferred** until the Canadian-hosting +
-managed-KMS gates are real (ROADMAP). See also
+forgetting, not read-only). **P12 (billing)** is done **ready-to-flip**: a
+per-user `plan` (free|full) + pure tested `src/lib/billing.ts` limits enforced in
+the pipeline (free cap = 2 emails / limited text), PLUS a `PaymentProvider` seam
+(`src/lib/payments/`, Stripe) with `/api/billing/checkout` + signature-verified
+`/api/billing/webhook` → `setPlan`. **Dormant in demo mode** (no `STRIPE_*` env);
+go live only after the keys-off-host hosting move (COMPLIANCE.md/ROADMAP). See also
 `CHANGELOG.md`, `ROADMAP.md`, and `OPEN_BUGS.md`.
 
 ## Gotchas (learned the hard way)
