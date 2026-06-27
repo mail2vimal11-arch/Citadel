@@ -17,6 +17,19 @@ services:
     # Let the container reach Ollama running on the host.
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    # Liveness: hit the content-free /api/health endpoint with node's built-in
+    # fetch (node:20-slim has no curl/wget). start_period covers the boot-time
+    # `prisma db push` + `next start` before failures count against us.
+    healthcheck:
+      test:
+        - "CMD"
+        - "node"
+        - "-e"
+        - "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
     volumes:
       - citadel-data:/app/data
       - citadel-secrets:/app/.citadel-secrets

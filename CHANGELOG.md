@@ -7,6 +7,29 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **Premium typography + de-AI'd landing copy.** Added Fraunces (an editorial
+  optical-sizing serif) via `next/font` for the brand wordmark and all marketing
+  display type, paired with Inter for body/UI — the landing page now reads
+  considered and premium instead of default-sans "template". Rewrote the hero
+  ("The inbox that forgets."), removed internal jargon from the page ("the wedge"
+  heading → "Three guarantees, not promises"), and tightened every section's prose
+  to be concrete and human. Warmed the marketing topbar to match the espresso/gold
+  theme.
+- **Liveness healthcheck.** New content-free `GET /api/health` (no DB/KMS/AI
+  touched) + a Docker Compose `healthcheck` on the `citadel` service (node's
+  built-in fetch; `start_period` covers boot-time `prisma db push`), so the
+  orchestrator can tell live from hung.
+- **Periodic security testing.** New `.github/workflows/security.yml` — gitleaks
+  secret scan, `npm audit`, CodeQL (SAST) on every push + weekly, and an OWASP ZAP
+  baseline (DAST) against a live heuristic build on the weekly schedule / on
+  demand. Plus `SECURITY.md`: disclosure policy, the automated cadence, and a
+  quarterly **manual pen-test checklist** scoped to the guarantees that matter
+  (tenant isolation, the forget guarantee, content-free audit, keys-off-host
+  boundary, billing webhook).
+- **Key-service deployment runbook.** `tools/keyservice/DEPLOY.md` — step-by-step
+  stand-up of the off-host key service on a separate (ideally Canadian) host behind
+  TLS: host lockdown, systemd unit with hardening, KEK generation + backup, Caddy
+  TLS (mTLS note), app wiring, cutover, and operations.
 - **Keys-off-host KMS — the production revenue gate (wired).** The KEK can now
   live on a different host from the Citadel app. New `RemoteKmsClient`
   (`src/lib/keyvault/kms/RemoteKmsClient.ts`) does every wrap/unwrap over HTTP
