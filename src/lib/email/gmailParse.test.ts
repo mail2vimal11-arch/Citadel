@@ -27,10 +27,12 @@ describe("gmail payload parsing", () => {
   });
 
   it("strips script/style even when the end tag has whitespace or attributes", () => {
-    // js/bad-tag-filter: the naive `</script>` pattern misses these forms.
+    // js/bad-tag-filter: a browser closes the element on `</script` + anything
+    // up to `>`, so the filter must too — whitespace, newlines, bogus attrs.
     expect(stripHtml("ok<script>evil()</script >more")).toBe("ok more");
     expect(stripHtml("ok<script type='x'>evil()</script\n>more")).toBe("ok more");
-    expect(stripHtml("a<style>body{}</style >b")).toBe("a b");
+    expect(stripHtml("ok<script>evil()</script\t\n bar>more")).toBe("ok more");
+    expect(stripHtml("a<style>body{}</style foo>b")).toBe("a b");
   });
 
   it("decodes entities without double-unescaping", () => {

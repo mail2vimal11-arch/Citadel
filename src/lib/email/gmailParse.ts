@@ -42,11 +42,13 @@ export function findPart(part: GmailPart, mime: string): GmailPart | undefined {
 export function stripHtml(html: string): string {
   return (
     html
-      // Drop <script>/<style> blocks. The end-tag pattern tolerates attributes
-      // and whitespace ("</script >", "</style\n>") so content can't slip past
-      // the filter — CodeQL js/bad-tag-filter flags the naive `</script>` form.
-      .replace(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, " ")
-      .replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, " ")
+      // Drop <script>/<style> blocks. The end-tag pattern uses [^>]* (not \s*)
+      // so it matches every form a browser treats as a closer — whitespace,
+      // newlines, and bogus end-tag attributes alike ("</script >",
+      // "</script\n bar>") — and nothing can slip past the filter (CodeQL
+      // js/bad-tag-filter flags anything narrower).
+      .replace(/<style\b[^>]*>[\s\S]*?<\/style[^>]*>/gi, " ")
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script[^>]*>/gi, " ")
       .replace(/<[^>]+>/g, " ")
       // Decode the few entities we care about. `&amp;` MUST be decoded LAST, or
       // an input like "&amp;lt;" would double-unescape to "<" instead of "&lt;"
