@@ -40,16 +40,24 @@ export function findPart(part: GmailPart, mime: string): GmailPart | undefined {
 }
 
 export function stripHtml(html: string): string {
-  return html
-    .replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/\s+/g, " ")
-    .trim();
+  return (
+    html
+      // Drop <script>/<style> blocks. The end-tag pattern tolerates attributes
+      // and whitespace ("</script >", "</style\n>") so content can't slip past
+      // the filter — CodeQL js/bad-tag-filter flags the naive `</script>` form.
+      .replace(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, " ")
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      // Decode the few entities we care about. `&amp;` MUST be decoded LAST, or
+      // an input like "&amp;lt;" would double-unescape to "<" instead of "&lt;"
+      // (CodeQL js/double-escaping).
+      .replace(/&nbsp;/g, " ")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&amp;/g, "&")
+      .replace(/\s+/g, " ")
+      .trim()
+  );
 }
 
 // Walk the MIME tree, preferring text/plain; fall back to stripped text/html;

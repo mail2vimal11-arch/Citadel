@@ -77,18 +77,46 @@ export class LocalKmsClient implements KmsClient {
       return buf;
     }
 
-    if (fs.existsSync(MASTER_KEY_FILE)) {
-      this.kek = Buffer.from(fs.readFileSync(MASTER_KEY_FILE, "utf8").trim(), "base64");
-      return this.kek;
+    // Try to read an existing KEK file directly. We read-then-handle-ENOENT
+    // instead of existsSync()-then-read so there's no check/use gap a concurrent
+    // process could exploit (CodeQL js/file-system-race).
+    const existing = readKeyFile();
+    if (existing) {
+      this.kek = existing;
+      return existing;
     }
 
     // First run with no configured KEK: generate one and persist it OUTSIDE the
-    // database (file mode 0600). TODO(production): never auto-provision — the KEK
-    // must come from the managed KMS / secrets manager.
+    // database (file mode 0600). Create it ATOMICALLY with the "wx" flag so two
+    // processes racing on first boot can't clobber each other's key and orphan
+    // already-wrapped data — the loser reads the winner's file instead.
+    // TODO(production): never auto-provision — the KEK must come from the managed
+    // KMS / secrets manager.
     const key = generateKey();
     fs.mkdirSync(SECRETS_DIR, { recursive: true });
-    fs.writeFileSync(MASTER_KEY_FILE, key.toString("base64"), { mode: 0o600 });
-    this.kek = key;
-    return key;
+    try {
+      fs.writeFileSync(MASTER_KEY_FILE, key.toString("base64"), { mode: 0o600, flag: "wx" });
+      this.kek = key;
+      return key;
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== "EEXIST") throw err;
+      // Another process created it first — adopt theirs so we agree on one KEK.
+      const winner = readKeyFile();
+      if (!winner) throw err;
+      this.kek = winner;
+      return winner;
+    }
+  }
+}
+
+// Read the KEK file if present; return null if it doesn't exist yet. Any other
+// error (permissions, corruption) propagates — we must not silently mint a new
+// key over an unreadable one.
+function readKeyFile(): Buffer | null {
+  try {
+    return Buffer.from(fs.readFileSync(MASTER_KEY_FILE, "utf8").trim(), "base64");
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw err;
   }
 }

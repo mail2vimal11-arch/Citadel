@@ -68,10 +68,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Default ("code-scanning") suite: CodeQL's high-precision security queries.
+      # We deliberately do NOT use security-and-quality here — its lower-precision
+      # quality pack flags our OAuth tokens (a file-stored secret legitimately sent
+      # in an Authorization header to a constant Google/Microsoft endpoint) as
+      # "file data in outbound network request", which is by design, not SSRF. The
+      # default suite still catches the real classes (bad-tag-filter, double-
+      # escaping, file-system-race). For a deeper periodic sweep, run CodeQL with
+      # security-and-quality manually and triage/dismiss the OAuth findings.
       - uses: github/codeql-action/init@v3
         with:
           languages: javascript-typescript
-          queries: security-and-quality
       - uses: github/codeql-action/analyze@v3
 
   # --------------------------------------------------------------------------

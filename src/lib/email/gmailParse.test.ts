@@ -26,6 +26,19 @@ describe("gmail payload parsing", () => {
     expect(stripHtml("<p>Hi&nbsp;<b>there</b></p><script>x()</script>")).toBe("Hi there");
   });
 
+  it("strips script/style even when the end tag has whitespace or attributes", () => {
+    // js/bad-tag-filter: the naive `</script>` pattern misses these forms.
+    expect(stripHtml("ok<script>evil()</script >more")).toBe("ok more");
+    expect(stripHtml("ok<script type='x'>evil()</script\n>more")).toBe("ok more");
+    expect(stripHtml("a<style>body{}</style >b")).toBe("a b");
+  });
+
+  it("decodes entities without double-unescaping", () => {
+    // js/double-escaping: "&amp;lt;" must become the literal "&lt;", not "<".
+    expect(stripHtml("a&amp;lt;b")).toBe("a&lt;b");
+    expect(stripHtml("x &amp;amp; y")).toBe("x &amp; y");
+  });
+
   it("prefers text/plain, then html, then a single-part body", () => {
     const multipart: GmailPart = {
       mimeType: "multipart/alternative",

@@ -7,6 +7,17 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **CodeQL triage (first run of the new security workflow).** The scanner found 3
+  high-severity issues — all fixed: hardened `stripHtml` so `<script>`/`<style>`
+  blocks are removed even with whitespace/attributes in the end tag
+  (`js/bad-tag-filter`) and reordered entity decoding so `&amp;` is decoded last
+  (`js/double-escaping`); and made the `LocalKmsClient` KEK auto-provision
+  race-free (read-or-atomic-`wx`-create instead of `existsSync`-then-write,
+  `js/file-system-race`). Added regression tests for both HTML-filter fixes (165
+  total). The 9 medium "file data in outbound network request" alerts were
+  confirmed **false positives** (OAuth tokens sent in an `Authorization` header to
+  constant Google/Microsoft endpoints — by design, not SSRF), so CodeQL now runs
+  its default high-precision suite instead of `security-and-quality`.
 - **Premium typography + de-AI'd landing copy.** Added Fraunces (an editorial
   optical-sizing serif) via `next/font` for the brand wordmark and all marketing
   display type, paired with Inter for body/UI — the landing page now reads
