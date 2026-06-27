@@ -12,35 +12,53 @@ import type { Plan } from "@/lib/billing";
 // ============================================================================
 
 export type Cycle = "monthly" | "annual";
-export type PlanChange = { userId: string; plan: Plan };
+
+// What a verified webhook tells us to do: change a plan, or note a payment
+// failure (audited; the actual downgrade waits for Stripe's dunning to cancel
+// the subscription, which arrives as customer.subscription.deleted).
+export type WebhookResult =
+  | { kind: "plan"; userId: string; plan: Plan }
+  | { kind: "payment_failed"; userId: string }
+  | null;
 
 export interface PaymentProvider {
   readonly name: string;
   // Hosted checkout URL to upgrade `userId` to Full on the chosen billing cycle.
   createCheckoutUrl(userId: string, cycle: Cycle, urls: { success: string; cancel: string }): Promise<string>;
-  // Verify a webhook (raw body + signature) and return the plan change to apply,
-  // or null when the event isn't one we act on. Throws on a bad signature.
-  parseWebhook(rawBody: string, signature: string | null): Promise<PlanChange | null>;
+  // Verify a webhook (raw body + signature) and return what to do, or null when
+  // the event isn't one we act on. Throws on a bad signature.
+  parseWebhook(rawBody: string, signature: string | null): Promise<WebhookResult>;
 }
 
-// PURE: map an ALREADY-VERIFIED Stripe event to a plan change. No SDK import, so
-// it's unit-testable. A paid checkout → Full; a cancelled/paused subscription →
-// Free. `userId` is carried in client_reference_id / metadata we set at checkout.
 type StripeEventLike = { type: string; data?: { object?: Record<string, unknown> } };
-export function planFromStripeEvent(event: StripeEventLike): PlanChange | null {
-  const obj = (event.data?.object ?? {}) as Record<string, unknown>;
+
+// The userId rides in client_reference_id / metadata we set at checkout; on
+// invoice events Stripe surfaces the subscription's metadata as subscription_details.
+function userIdOf(obj: Record<string, unknown>): string {
   const meta = (obj.metadata ?? {}) as Record<string, unknown>;
-  const userId = (obj.client_reference_id as string) || (meta.userId as string) || "";
+  const subDetails = (obj.subscription_details ?? {}) as Record<string, unknown>;
+  const subMeta = (subDetails.metadata ?? {}) as Record<string, unknown>;
+  return (obj.client_reference_id as string) || (meta.userId as string) || (subMeta.userId as string) || "";
+}
+
+// PURE: map an ALREADY-VERIFIED Stripe event to an action. No SDK import, so it's
+// unit-testable. Paid checkout → Full; cancelled/paused subscription → Free;
+// invoice.payment_failed → a content-free "payment failed" note.
+export function interpretStripeEvent(event: StripeEventLike): WebhookResult {
+  const obj = (event.data?.object ?? {}) as Record<string, unknown>;
+  const userId = userIdOf(obj);
 
   switch (event.type) {
     case "checkout.session.completed":
       if (userId && (obj.payment_status === "paid" || obj.status === "complete")) {
-        return { userId, plan: "full" };
+        return { kind: "plan", userId, plan: "full" };
       }
       return null;
     case "customer.subscription.deleted":
     case "customer.subscription.paused":
-      return userId ? { userId, plan: "free" } : null;
+      return userId ? { kind: "plan", userId, plan: "free" } : null;
+    case "invoice.payment_failed":
+      return userId ? { kind: "payment_failed", userId } : null;
     default:
       return null;
   }

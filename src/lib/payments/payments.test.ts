@@ -1,29 +1,29 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { planFromStripeEvent } from "./PaymentProvider";
+import { interpretStripeEvent } from "./PaymentProvider";
 import { paymentsConfigured } from "./index";
 
-describe("planFromStripeEvent", () => {
+describe("interpretStripeEvent", () => {
   it("a paid checkout → Full (userId from client_reference_id)", () => {
     expect(
-      planFromStripeEvent({
+      interpretStripeEvent({
         type: "checkout.session.completed",
         data: { object: { client_reference_id: "user-1", payment_status: "paid" } },
       })
-    ).toEqual({ userId: "user-1", plan: "full" });
+    ).toEqual({ kind: "plan", userId: "user-1", plan: "full" });
   });
 
   it("also reads userId from metadata", () => {
     expect(
-      planFromStripeEvent({
+      interpretStripeEvent({
         type: "checkout.session.completed",
         data: { object: { metadata: { userId: "user-2" }, status: "complete" } },
       })
-    ).toEqual({ userId: "user-2", plan: "full" });
+    ).toEqual({ kind: "plan", userId: "user-2", plan: "full" });
   });
 
   it("an unpaid/incomplete checkout → null", () => {
     expect(
-      planFromStripeEvent({
+      interpretStripeEvent({
         type: "checkout.session.completed",
         data: { object: { client_reference_id: "user-1", payment_status: "unpaid" } },
       })
@@ -32,17 +32,26 @@ describe("planFromStripeEvent", () => {
 
   it("a cancelled subscription → Free", () => {
     expect(
-      planFromStripeEvent({
+      interpretStripeEvent({
         type: "customer.subscription.deleted",
         data: { object: { metadata: { userId: "user-3" } } },
       })
-    ).toEqual({ userId: "user-3", plan: "free" });
+    ).toEqual({ kind: "plan", userId: "user-3", plan: "free" });
+  });
+
+  it("a failed invoice → payment_failed (userId from subscription_details)", () => {
+    expect(
+      interpretStripeEvent({
+        type: "invoice.payment_failed",
+        data: { object: { subscription_details: { metadata: { userId: "user-4" } } } },
+      })
+    ).toEqual({ kind: "payment_failed", userId: "user-4" });
   });
 
   it("ignores unrelated events and missing userId", () => {
-    expect(planFromStripeEvent({ type: "invoice.paid", data: { object: {} } })).toBeNull();
+    expect(interpretStripeEvent({ type: "invoice.paid", data: { object: {} } })).toBeNull();
     expect(
-      planFromStripeEvent({ type: "checkout.session.completed", data: { object: { payment_status: "paid" } } })
+      interpretStripeEvent({ type: "checkout.session.completed", data: { object: { payment_status: "paid" } } })
     ).toBeNull();
   });
 });

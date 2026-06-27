@@ -18,20 +18,28 @@ export async function POST(req: Request) {
   const signature = req.headers.get("stripe-signature");
   const rawBody = await req.text(); // raw body required for signature verification
 
-  let change;
+  let result;
   try {
-    change = await payments.parseWebhook(rawBody, signature);
+    result = await payments.parseWebhook(rawBody, signature);
   } catch {
     return new NextResponse("invalid signature", { status: 400 });
   }
 
-  if (change) {
-    await setPlan(change.userId, change.plan);
+  if (result?.kind === "plan") {
+    await setPlan(result.userId, result.plan);
     // Content-free: who's plan changed and that Stripe drove it — never card data.
     await recordAudit({
-      userId: change.userId,
+      userId: result.userId,
       event: "SETTINGS_CHANGED",
-      message: `Plan set to "${change.plan}" via Stripe.`,
+      message: `Plan set to "${result.plan}" via Stripe.`,
+    });
+  } else if (result?.kind === "payment_failed") {
+    // Don't downgrade on a single failure — Stripe retries (dunning), and a final
+    // failure cancels the subscription (→ a "plan: free" event). Just record it.
+    await recordAudit({
+      userId: result.userId,
+      event: "SETTINGS_CHANGED",
+      message: "Stripe payment failed; Stripe will retry before cancelling.",
     });
   }
 

@@ -1,6 +1,6 @@
 import Stripe from "stripe";
-import type { Cycle, PaymentProvider, PlanChange } from "./PaymentProvider";
-import { planFromStripeEvent } from "./PaymentProvider";
+import type { Cycle, PaymentProvider, WebhookResult } from "./PaymentProvider";
+import { interpretStripeEvent } from "./PaymentProvider";
 
 // Stripe-backed PaymentProvider. Imported ONLY via getPayments() in server
 // routes (never client-side), so the SDK stays out of every other bundle.
@@ -36,11 +36,11 @@ export class StripePayments implements PaymentProvider {
     return session.url;
   }
 
-  async parseWebhook(rawBody: string, signature: string | null): Promise<PlanChange | null> {
+  async parseWebhook(rawBody: string, signature: string | null): Promise<WebhookResult> {
     if (!signature) throw new Error("Missing Stripe signature.");
     const secret = process.env.STRIPE_WEBHOOK_SECRET ?? "";
     // Throws on a bad/forged signature — the route turns that into a 400.
     const event = this.stripe.webhooks.constructEvent(rawBody, signature, secret);
-    return planFromStripeEvent(event as unknown as { type: string; data?: { object?: Record<string, unknown> } });
+    return interpretStripeEvent(event as unknown as { type: string; data?: { object?: Record<string, unknown> } });
   }
 }
