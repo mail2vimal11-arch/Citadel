@@ -41,3 +41,9 @@ next-env.d.ts
 # Docker runtime env (holds Google secrets) — never commit; see .env.docker.example
 .env.docker
 /data/
+
+# Testing artifacts
+coverage/
+playwright-report/
+test-results/
+prisma/e2e.db

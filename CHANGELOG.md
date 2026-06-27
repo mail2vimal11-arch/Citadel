@@ -7,6 +7,17 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **Full test pyramid on a standard cadence.** Built out testing across every
+  layer and wired it to frequencies (`TESTING.md` maps each type → tool → cadence):
+  unit + **integration** (new `integration.forget.test.ts` drives the whole
+  process → encrypt → crypto-shred → prove-unrecoverable → content-free-audit
+  lifecycle end-to-end; 167 tests) with **coverage** (`npm run test:coverage`,
+  white-box); **E2E/system/smoke/black-box** via Playwright against a real build
+  (`e2e/`, using the pre-installed Chromium); and **performance/load/stress** via
+  autocannon (`tools/perf/`). New `tests.yml` runs unit+E2E on every push/PR and
+  performance nightly; `security.yml` already covers security testing weekly +
+  per-push. Regression/sanity/UAT are the existing suite + a per-release UAT
+  checklist in `TESTING.md`.
 - **CodeQL triage (first run of the new security workflow).** The scanner found 3
   high-severity issues — all fixed: hardened `stripHtml` so `<script>`/`<style>`
   blocks are removed even with whitespace/attributes in the end tag

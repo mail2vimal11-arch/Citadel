@@ -25,5 +25,15 @@ export default defineConfig({
       DATABASE_URL: "file:./test.db",
       AI_PROVIDER: "heuristic",
     },
+    // White-box visibility: `npm run test:coverage` reports line/branch coverage
+    // of the pure domain logic. We scope to src/lib (the tested business code)
+    // and exclude tests, types, and barrels that carry no logic.
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "html", "lcov"],
+      reportsDirectory: "./coverage",
+      include: ["src/lib/**/*.ts"],
+      exclude: ["**/*.test.ts", "**/index.ts", "src/lib/types.ts"],
+    },
   },
 });

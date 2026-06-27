@@ -11,6 +11,11 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "smoke": "playwright test e2e/smoke.spec.ts",
+    "perf:load": "node tools/perf/load.mjs",
+    "perf:stress": "node tools/perf/stress.mjs",
     "postinstall": "prisma generate"
   },
   "prisma": {
@@ -26,9 +31,12 @@
     "stripe": "^17.7.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@types/node": "20.14.10",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
+    "@vitest/coverage-v8": "^2.1.9",
+    "autocannon": "^7.15.0",
     "prisma": "5.22.0",
     "typescript": "5.5.3",
     "vitest": "^2.1.9"
