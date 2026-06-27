@@ -55,8 +55,11 @@ lines to change for production.
 - `src/lib/keyvault/KeyVault.ts` → `KmsKeyVault` (default; envelope encryption, DB
   holds only ciphertext) · `LocalKeyVault` (`KEY_VAULT=local`, DEMO — keys beside
   data). Selected in `src/lib/keyvault/index.ts`. The KMS itself is a seam
-  (`src/lib/keyvault/kms/KmsClient.ts` → `LocalKmsClient`, KEK in
-  `KMS_MASTER_KEY`/`.citadel-secrets/`). Crypto in `src/lib/crypto.ts` (AES-256-GCM).
+  (`src/lib/keyvault/kms/KmsClient.ts`, picked by `getKmsClient()` in
+  `kms/index.ts`): `LocalKmsClient` (KEK in `KMS_MASTER_KEY`/`.citadel-secrets/`,
+  on-host demo) · `RemoteKmsClient` (`KMS_REMOTE_URL` set → **keys-off-host**:
+  wrap/unwrap hits an external key service, KEK never on the app box; reference
+  service `tools/keyservice/server.mjs`). Crypto in `src/lib/crypto.ts` (AES-256-GCM).
 - Pipeline `src/lib/pipeline.ts`; forget engine `src/lib/forget/forgetEngine.ts`
   (lazy sweep on read + `runForgetSweepAll`); background scheduler
   `src/lib/forget/scheduler.ts` started by `src/instrumentation.ts` (forgets on
@@ -66,7 +69,9 @@ lines to change for production.
 ## Env vars (`.env`)
 `DATABASE_URL` · `AI_PROVIDER` · `OLLAMA_BASE_URL` · `OLLAMA_MODEL` ·
 `OLLAMA_EMBED_MODEL` · `KEY_VAULT` (`auto`|`kms`|`local`) · `KMS_MASTER_KEY`
-(base64 KEK; blank → auto-provisioned local file) · `FORGET_SWEEP_INTERVAL_MS`
+(base64 KEK; blank → auto-provisioned local file) · `KMS_REMOTE_URL` /
+`KMS_REMOTE_TOKEN` (set → keys-off-host `RemoteKmsClient`; blank → on-host) ·
+`FORGET_SWEEP_INTERVAL_MS`
 (background sweep cadence; `0` disables) · `AUTH_SECRET` /
 `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` (blank → demo mode, no login). The
 committed `.env` defaults to `AI_PROVIDER="auto"`.
@@ -134,8 +139,11 @@ per-user `plan` (free|full) + pure tested `src/lib/billing.ts` limits enforced i
 the pipeline (free cap = 2 emails / limited text), PLUS a `PaymentProvider` seam
 (`src/lib/payments/`, Stripe) with `/api/billing/checkout` + signature-verified
 `/api/billing/webhook` → `setPlan`. **Dormant in demo mode** (no `STRIPE_*` env);
-go live only after the keys-off-host hosting move (COMPLIANCE.md/ROADMAP). See also
-`CHANGELOG.md`, `ROADMAP.md`, and `OPEN_BUGS.md`.
+go live only after the keys-off-host hosting move (COMPLIANCE.md/ROADMAP).
+**Keys-off-host KMS is now wired:** `RemoteKmsClient` + reference key service
+(`tools/keyservice/`) move the KEK to a separate host when `KMS_REMOTE_URL` is set,
+so going live is now operational (stand up the key host + 2 env vars), not a code
+change. See also `CHANGELOG.md`, `ROADMAP.md`, and `OPEN_BUGS.md`.
 
 ## Gotchas (learned the hard way)
 - Apertus needs its **chat template** applied or it rambles (math) / replies in

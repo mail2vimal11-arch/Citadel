@@ -32,19 +32,25 @@ secondary, best-effort layer — never the guarantee.
 
 ## The guarantee that actually holds (technical, provider-independent)
 1. **Per-item encryption** (already shipped — AES-256-GCM, one key per item).
-2. **Keys held off the host.** An external key manager Citadel controls, hosted
-   **separately** from the GPU/data host (AWS KMS **External Key Store / XKS**
-   style, or our own off-host KMS). The host stores only ciphertext + *wrapped*
-   DEKs it cannot decrypt alone. **Plain BYOK is not enough** — only a true
-   external manager keeps the decrypting key off the host.
+2. **Keys held off the host** (now wired). An external key manager Citadel
+   controls, hosted **separately** from the GPU/data host (AWS KMS **External Key
+   Store / XKS** style, or our own off-host KMS). The host stores only ciphertext +
+   *wrapped* DEKs it cannot decrypt alone. **Plain BYOK is not enough** — only a
+   true external manager keeps the decrypting key off the host. Implemented as the
+   `RemoteKmsClient` seam (`src/lib/keyvault/kms/`): set `KMS_REMOTE_URL` and every
+   wrap/unwrap goes to an external key service (reference: `tools/keyservice/`,
+   meant for a separate Canadian host); the KEK never lands on the app box.
 3. **Crypto-shredding** (already shipped — destroy per-item keys on schedule →
    data unrecoverable even if ciphertext is later compelled).
 4. **Net:** a compelled disclosure yields unreadable bytes. This does **not**
    depend on a notification promise a gag order can void.
 
 This is already Citadel's architecture: the `KmsKeyVault` seam (BUILD_PLAN P2) +
-the scheduled forget engine (P3). **The production step is to point the KEK at an
-off-host key store** — not the cloud that runs the model. See ARCHITECTURE.md.
+the scheduled forget engine (P3), and now the off-host `RemoteKmsClient` +
+reference key service. **Going live is now operational, not a code change**: stand
+up `tools/keyservice/server.mjs` (or a managed KMS/HSM) on a separate, ideally
+Canadian, host behind TLS and set `KMS_REMOTE_URL`/`KMS_REMOTE_TOKEN` on the app —
+the KEK then never touches the cloud that runs the model. See ARCHITECTURE.md.
 
 ## Interim hosting — until a sovereign Canadian-GPU end-state
 Ranked for a sovereignty-leaning, bootstrap budget that **keeps self-hosted

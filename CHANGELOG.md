@@ -7,6 +7,20 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **Keys-off-host KMS — the production revenue gate (wired).** The KEK can now
+  live on a different host from the Citadel app. New `RemoteKmsClient`
+  (`src/lib/keyvault/kms/RemoteKmsClient.ts`) does every wrap/unwrap over HTTP
+  against an external key service, so the app box only ever holds ciphertext +
+  wrapped DEKs — a seizure/court order against the compute host yields nothing
+  decryptable, and crypto-shredding stays irreversible. A one-line selector
+  (`getKmsClient()` in `src/lib/keyvault/kms/index.ts`) flips to it when
+  `KMS_REMOTE_URL` is set, else falls back to the on-host `LocalKmsClient` for dev.
+  Ships with `tools/keyservice/server.mjs` — a zero-dependency reference key
+  service (same `kms:v1:` envelope format, Bearer auth, `/wrap` `/unwrap`
+  `/health`) meant to run on a separate, ideally Canadian, host — plus its README.
+  6 new tests (round-trip, 404→null, bearer, error paths); 162 total green. This
+  is the COMPLIANCE.md gate that unblocks taking real client data: going live is
+  now operational (stand up the key host + set two env vars), not a code change.
 - **P12 charging — ready-to-flip Stripe.** Completed the monetization wiring
   behind the gating: a `PaymentProvider` seam (`src/lib/payments/`) with a Stripe
   impl, `POST /api/billing/checkout` (hosted Checkout — $15/mo or $10/mo annual)

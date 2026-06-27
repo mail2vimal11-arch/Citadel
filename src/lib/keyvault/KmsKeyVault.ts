@@ -1,6 +1,6 @@
 import type { IssuedKey, KeyVault } from "./KeyVault";
 import type { KmsClient } from "./kms/KmsClient";
-import { LocalKmsClient } from "./kms/LocalKmsClient";
+import { getKmsClient } from "./kms";
 import { WRAP_PREFIX } from "./kms/LocalKmsClient";
 import { prisma } from "@/lib/db";
 
@@ -21,7 +21,9 @@ import { prisma } from "@/lib/db";
 export class KmsKeyVault implements KeyVault {
   readonly name = "KMS key vault (envelope encryption; keys stored apart from data)";
 
-  constructor(private readonly kms: KmsClient = new LocalKmsClient()) {}
+  // Defaults to the env-selected client: off-host RemoteKmsClient when
+  // KMS_REMOTE_URL is set, else the local KEK. Injectable for tests.
+  constructor(private readonly kms: KmsClient = getKmsClient()) {}
 
   async issueKey(): Promise<IssuedKey> {
     const { plaintext, wrapped } = await this.kms.generateDataKey();

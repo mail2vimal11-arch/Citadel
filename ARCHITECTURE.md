@@ -165,7 +165,8 @@ per item; destroying it makes that item unrecoverable. Selected by
 |---|---|---|
 | `KmsKeyVault` (default) | `src/lib/keyvault/KmsKeyVault.ts` | ✅ **envelope encryption** — keys live apart from data; DB holds only ciphertext |
 | `LocalKeyVault` (`KEY_VAULT=local`) | `src/lib/keyvault/LocalKeyVault.ts` | demo only — **insecure** (raw keys beside data); kept for contrast |
-| Off-host key manager | `src/lib/keyvault/kms/KmsClient.ts` (seam) | 🚧 `TODO(production)` — repoint `LocalKmsClient` at an external key manager Citadel controls, **off the compute host** (XKS-style); see `COMPLIANCE.md` |
+| `LocalKmsClient` (default) | `src/lib/keyvault/kms/LocalKmsClient.ts` | demo — KEK in env/file **on this host** |
+| `RemoteKmsClient` (`KMS_REMOTE_URL` set) | `src/lib/keyvault/kms/RemoteKmsClient.ts` | ✅ **keys-off-host** — wraps/unwraps via an external key service; the KEK never touches this box. Reference service: `tools/keyservice/server.mjs`. See `COMPLIANCE.md` |
 
 **Envelope encryption (the P2 model).** `KmsKeyVault` never stores raw keys. It
 asks the KMS seam (`KmsClient`) for a per-item **data key (DEK)**: the KMS returns
@@ -179,15 +180,24 @@ the plaintext DEK was never written down, the item is unrecoverable even to
 someone holding both the database *and* the KEK. Legacy raw-key rows from the old
 vault are read transparently so upgrading never loses data.
 
-**`TODO(production)` — keys OFF the host.** The production target is not "a managed
-KMS" generically but an **external key manager Citadel controls, hosted separately
-from the GPU/data host** (AWS KMS External Key Store / XKS-style, or our own
-off-host KMS). Two research passes established why: no cloud jurisdiction is immune
-(US-owned → CLOUD Act; even non-US providers are reachable via a local subsidiary —
-*King v. OVH*, Ont. 2025), so the load-bearing guarantee must be technical — the
-host only ever holds ciphertext + wrapped DEKs it cannot decrypt alone, and
-crypto-shredding makes a compelled disclosure unreadable. **Plain BYOK is
-insufficient**; the decrypting key must live off the host. See `COMPLIANCE.md`.
+**Keys OFF the host (the production gate, now wired).** The production target is not
+"a managed KMS" generically but an **external key manager Citadel controls, hosted
+separately from the GPU/data host** (AWS KMS External Key Store / XKS-style, or our
+own off-host KMS). Two research passes established why: no cloud jurisdiction is
+immune (US-owned → CLOUD Act; even non-US providers are reachable via a local
+subsidiary — *King v. OVH*, Ont. 2025), so the load-bearing guarantee must be
+technical — the host only ever holds ciphertext + wrapped DEKs it cannot decrypt
+alone, and crypto-shredding makes a compelled disclosure unreadable. **Plain BYOK
+is insufficient**; the decrypting key must live off the host.
+
+The seam for this now exists: setting `KMS_REMOTE_URL` flips `getKmsClient()`
+(`src/lib/keyvault/kms/index.ts`) from `LocalKmsClient` to `RemoteKmsClient`, which
+does every wrap/unwrap over HTTP against an external key service that holds the KEK.
+`tools/keyservice/server.mjs` is a zero-dependency reference implementation of that
+service (same `kms:v1:` envelope format), meant to run on a separate Canadian host.
+`TODO(production)`: replace the reference service with a Canadian-controlled managed
+KMS/HSM (KEK generated and used inside hardware), add mTLS + unwrap audit logging.
+See `COMPLIANCE.md`.
 
 ---
 
