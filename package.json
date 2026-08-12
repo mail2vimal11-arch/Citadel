@@ -15,9 +15,10 @@
   "prisma": {
     "schema": "prisma/schema.prisma"
   },
-  "overridesComment": "Forces a patched postcss (a build-time transitive dep of Next.js, which pins 8.4.31) to satisfy a Dependabot security advisory. Remove once Next ships a release depending on a non-vulnerable postcss.",
+  "overridesComment": "Force patched versions of build-time transitive deps of Next.js to satisfy Dependabot security advisories. Remove each once Next ships a release depending on non-vulnerable versions. postcss: Next pins 8.4.31. nanoid: pulled in via postcss; advisory fixed in 3.3.17.",
   "overrides": {
-    "postcss": "^8.5.18"
+    "postcss": "^8.5.18",
+    "nanoid": "^3.3.17"
   },
   "dependencies": {
     "@prisma/client": "5.22.0",
