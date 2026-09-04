@@ -615,3 +615,19 @@ a.brand, a.brand:hover { text-decoration: none; }
 
 .mk-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 40px 0 0; margin-top: 48px; border-top: 1px solid var(--line); flex-wrap: wrap; }
 .mk-foot-note { color: var(--muted); font-size: 12.5px; }
+.mk-foot-links { display: flex; gap: 18px; }
+.mk-foot-links a { color: var(--muted); font-size: 12.5px; }
+.mk-foot-links a:hover { color: var(--ink); text-decoration: none; }
+
+/* ------------------------------------------------------------- Legal pages */
+.legal { max-width: 760px; margin: 0 auto; padding: 24px 24px 96px; color: var(--ink-2); }
+.legal h1 { font-family: var(--font-display); font-optical-sizing: auto; font-weight: 560; letter-spacing: -0.6px; font-size: clamp(32px, 5vw, 46px); color: var(--ink); margin: 24px 0 6px; }
+.legal-meta { color: var(--muted); font-size: 13px; margin: 0 0 28px; }
+.legal h2 { font-family: var(--font-display); font-optical-sizing: auto; font-weight: 540; letter-spacing: -0.2px; font-size: 21px; color: var(--ink); margin: 34px 0 10px; }
+.legal p { line-height: 1.7; margin: 0 0 14px; }
+.legal ul { margin: 0 0 16px; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; }
+.legal li { line-height: 1.6; }
+.legal strong { color: var(--ink); }
+.legal code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.9em; background: var(--accent-soft); border: 1px solid var(--line-2); border-radius: 6px; padding: 1px 5px; color: var(--accent-ink); }
+.legal a { color: var(--accent-ink); }
+.legal-foot { margin-top: 32px; padding-top: 18px; border-top: 1px solid var(--line); }

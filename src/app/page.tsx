@@ -145,6 +145,9 @@ export default function Landing() {
         <div className="mk-foot-note">
           Concept prototype · synthetic data by default · AI runs locally. © Citadel
         </div>
+        <div className="mk-foot-links">
+          <Link href="/privacy">Privacy</Link>
+        </div>
       </footer>
       </div>
     </>
