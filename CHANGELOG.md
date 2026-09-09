@@ -7,6 +7,14 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/); the project is 
 yet using semantic-version releases.
 
 ## [Unreleased]
+- **"View original" in the reading pane (privacy-preserving).** Citadel never
+  stores raw email bodies, so the reader previously showed only the AI summary +
+  draft. Added an on-demand **View original** button that fetches the one message
+  live from the mailbox (`src/lib/email/original.ts` → `POST /api/original`),
+  hands it to that user's browser, and **never persists, audits, or logs it** —
+  same in-memory, nothing-stored guarantee as the pipeline. Routes by `sourceId`
+  (Gmail/Graph/sample), userId-scoped, `no-store`; fetched once per item then
+  toggled. + a hosted OAuth-verification gate doc and `/privacy` page.
 - **Full test pyramid on a standard cadence.** Built out testing across every
   layer and wired it to frequencies (`TESTING.md` maps each type → tool → cadence):
   unit + **integration** (new `integration.forget.test.ts` drives the whole

@@ -403,6 +403,9 @@ button:disabled { opacity: 0.45; cursor: default; }
 .reading-head { margin-bottom: 12px; }
 .reading-privacy { font-size: 12.5px; color: var(--muted); line-height: 1.55; background: var(--accent-soft); border: 1px solid rgba(192, 114, 74, 0.22); border-radius: var(--r-sm); padding: 9px 12px; margin: 12px 0; }
 .reading-privacy strong { color: var(--accent-ink); }
+.original { margin-top: 10px; }
+.original-body { white-space: pre-wrap; word-break: break-word; max-height: 340px; overflow: auto; margin: 0; background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 12px 14px; font-family: inherit; font-size: 13.5px; line-height: 1.62; color: var(--ink-2); }
+.original-note { margin-top: 6px; }
 .reading-section-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); font-weight: 650; }
 
 /* Compose / reply modal (send) */

@@ -1226,6 +1226,35 @@ function ReadingActive({
     }
   };
 
+  // View original (on demand): Citadel never stores the raw body, so we fetch it
+  // live from the mailbox when asked, hold it in component state only, and never
+  // persist it. Fetched once per item, then just toggled.
+  const [origOpen, setOrigOpen] = useState(false);
+  const [original, setOriginal] = useState<string | null>(null);
+  const [origErr, setOrigErr] = useState<string | null>(null);
+  const [origLoading, setOrigLoading] = useState(false);
+  const viewOriginal = async () => {
+    if (origOpen) { setOrigOpen(false); return; }
+    if (original !== null || origErr) { setOrigOpen(true); return; } // already fetched
+    setOrigLoading(true);
+    setOrigErr(null);
+    try {
+      const res = await fetch("/api/original", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ itemId: item.id }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (res.ok && d.ok) setOriginal(d.body || "(This message has no text body.)");
+      else setOrigErr(d.error || "Couldn’t fetch the original.");
+    } catch {
+      setOrigErr("Couldn’t reach your mailbox — check your connection and try again.");
+    } finally {
+      setOrigLoading(false);
+      setOrigOpen(true);
+    }
+  };
+
   // Write-with-AI: compose a draft from a freeform instruction, in the user's tone.
   const [instruction, setInstruction] = useState("");
   const [composed, setComposed] = useState<string | null>(null);
@@ -1250,10 +1279,13 @@ function ReadingActive({
     }
   };
 
-  // Reset the compose box when switching to a different message.
+  // Reset the compose box + original view when switching to a different message.
   useEffect(() => {
     setInstruction("");
     setComposed(null);
+    setOrigOpen(false);
+    setOriginal(null);
+    setOrigErr(null);
   }, [item.id]);
 
   // Calendar helpers (P10): suggest meeting times into the reply, or download an
@@ -1297,8 +1329,26 @@ function ReadingActive({
         the encrypted, AI-derived view — auto-forgets <strong>{forgetCountdown(item.forgetAt)}</strong>.
       </p>
 
-      <div className="reading-section-label">Summary</div>
+      <div className="reading-section-label" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span>Summary</span>
+        <button type="button" className="btn-secondary btn-small" onClick={viewOriginal} disabled={origLoading}>
+          {origLoading ? "Fetching…" : origOpen ? "Hide original" : "View original"}
+        </button>
+      </div>
       <div className="summary" style={{ marginTop: 4 }}>{p.summary}</div>
+
+      {origOpen && (
+        <div className="original">
+          {origErr ? (
+            <div className="note" style={{ margin: 0 }}>{origErr}</div>
+          ) : (
+            <pre className="original-body">{original}</pre>
+          )}
+          <div className="note original-note">
+            Fetched live from your mailbox just now · Citadel does not store this.
+          </div>
+        </div>
+      )}
 
       <div className="draft">
         <div className="draft-label" style={{ display: "flex", justifyContent: "space-between" }}>
