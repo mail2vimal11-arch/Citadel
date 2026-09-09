@@ -1,0 +1,132 @@
+name: Security
+
+# Periodic security testing — the automated half of Citadel's "pen test on a
+# cadence" posture (see SECURITY.md for the manual half).
+#
+#   - secret-scan / dependency-audit / codeql run on every push + PR + weekly,
+#     so regressions are caught immediately.
+#   - dast-zap (a real dynamic scan against a running instance) is heavier, so it
+#     runs on the weekly schedule and on-demand, not on every commit.
+#
+# Findings surface in the Actions logs, the Security tab (CodeQL), and uploaded
+# report artifacts. Jobs are independent so one failing never hides another.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  workflow_dispatch:
+  push:
+    branches: ["**"]
+  pull_request:
+
+permissions:
+  contents: read
+  security-events: write # CodeQL needs this to publish to the Security tab
+
+jobs:
+  # --------------------------------------------------------------------------
+  # Secret scan — catch committed credentials (API keys, tokens, private keys).
+  # Especially relevant here: live keys must NEVER land in the repo, only in
+  # .env on the host.
+  # --------------------------------------------------------------------------
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # gitleaks scans full history
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # --------------------------------------------------------------------------
+  # Dependency audit — known-vulnerable npm packages. Informational (won't fail
+  # the workflow on pre-existing transitive advisories), but the summary is
+  # always printed so the count is visible and trackable.
+  # --------------------------------------------------------------------------
+  dependency-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - name: npm audit (high+)
+        run: |
+          npm audit --audit-level=high || true
+          echo "### npm audit summary" >> "$GITHUB_STEP_SUMMARY"
+          npm audit --audit-level=high --json \
+            | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const j=JSON.parse(s);const v=j.metadata?.vulnerabilities||{};console.log('| severity | count |\n|---|---|');for(const k of ['critical','high','moderate','low','info'])console.log('| '+k+' | '+(v[k]||0)+' |');}catch{console.log('audit produced no JSON');}})" \
+            >> "$GITHUB_STEP_SUMMARY" || true
+
+  # --------------------------------------------------------------------------
+  # CodeQL — static analysis (SAST) for JS/TS: injection, unsafe sinks, etc.
+  # --------------------------------------------------------------------------
+  codeql:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Default ("code-scanning") suite: CodeQL's high-precision security queries.
+      # We deliberately do NOT use security-and-quality here — its lower-precision
+      # quality pack flags our OAuth tokens (a file-stored secret legitimately sent
+      # in an Authorization header to a constant Google/Microsoft endpoint) as
+      # "file data in outbound network request", which is by design, not SSRF. The
+      # default suite still catches the real classes (bad-tag-filter, double-
+      # escaping, file-system-race). For a deeper periodic sweep, run CodeQL with
+      # security-and-quality manually and triage/dismiss the OAuth findings.
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+      - uses: github/codeql-action/analyze@v3
+
+  # --------------------------------------------------------------------------
+  # DAST — OWASP ZAP baseline against a live instance. This is the automated
+  # "pen test": it crawls the running app and probes for common web weaknesses
+  # (missing security headers, XSS, info leaks, etc.). Heavy, so schedule/manual
+  # only. Runs against the hermetic heuristic build — no Ollama, synthetic data.
+  # --------------------------------------------------------------------------
+  dast-zap:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: "file:./dev.db"
+      AI_PROVIDER: "heuristic"
+      FORGET_SWEEP_INTERVAL_MS: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - name: Install + build
+        run: |
+          npm ci
+          npx prisma db push --skip-generate
+          npx next build
+      - name: Start app
+        run: |
+          npx next start -H 0.0.0.0 -p 3000 &
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:3000/api/health >/dev/null; then
+              echo "app is up"; exit 0
+            fi
+            sleep 2
+          done
+          echo "app did not become healthy in time"; exit 1
+      - name: ZAP baseline scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: "http://127.0.0.1:3000"
+          allow_issue_writing: false # report via artifact/log, don't spam Issues
+          cmd_options: "-a" # include alpha passive rules
+      - name: Upload ZAP report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-baseline-report
+          path: |
+            report_html.html
+            report_md.md
+          if-no-files-found: ignore

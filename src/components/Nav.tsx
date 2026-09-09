@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const links = [
-  { href: "/", label: "Inbox" },
+  { href: "/inbox", label: "Inbox" },
   { href: "/settings", label: "Settings" },
   { href: "/audit", label: "Audit log" },
 ];
@@ -14,10 +14,13 @@ export default function Nav() {
   return (
     <header className="topbar">
       <div className="brand">
-        Sovereign Inbox
-        <small>Privacy-first email assistant — concept prototype</small>
+        <span className="logo" aria-hidden>C</span>
+        <span className="brand-text">
+          <b>Citadel</b>
+          <small>Your sovereign inbox</small>
+        </span>
       </div>
-      <nav>
+      <nav className="nav-links">
         {links.map((l) => (
           <Link key={l.href} href={l.href} className={path === l.href ? "active" : ""}>
             {l.label}

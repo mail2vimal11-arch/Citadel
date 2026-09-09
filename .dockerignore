@@ -1,0 +1,15 @@
+node_modules
+.next
+.git
+.gitignore
+.github
+# Never bake secrets or local env into the image (compose provides env at runtime)
+.env
+.env.*
+.citadel-secrets
+data
+# Local SQLite (the container uses its own data volume)
+prisma/dev.db
+prisma/dev.db-journal
+# Docs aren't needed in the image
+*.md

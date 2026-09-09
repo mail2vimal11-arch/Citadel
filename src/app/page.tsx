@@ -1,261 +1,176 @@
-"use client";
+import Link from "next/link";
 
-import { useCallback, useEffect, useState } from "react";
-
-type Payload = {
-  from: string;
-  subject: string;
-  receivedAt: string;
-  summary: string;
-  priority: "Urgent" | "Action needed" | "FYI" | "Low";
-  triageLabel: string;
-  draftReply: string;
-};
-type ActiveItem = {
-  id: string;
-  status: "ACTIVE";
-  processedAt: string;
-  forgetAt: string | null;
-  payload: Payload;
-};
-type ForgottenItem = {
-  id: string;
-  status: "FORGOTTEN";
-  processedAt: string;
-  forgottenAt: string;
-};
-type Item = ActiveItem | ForgottenItem;
-
-const fmt = (iso: string) =>
-  new Date(iso).toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-const priorityClass = (p: Payload["priority"]) =>
-  p === "Urgent" ? "p-Urgent" : p === "Action needed" ? "p-Action" : p === "FYI" ? "p-FYI" : "p-Low";
-
-const intervalLabel: Record<string, string> = {
-  "1h": "1 hour after processing",
-  "24h": "24 hours after processing",
-  "7d": "7 days after processing",
-  logout: "only on logout",
+export const metadata = {
+  title: "Citadel — your sovereign inbox",
+  description:
+    "Private, sovereign email for everyone — built to a regulated-professional standard. The AI runs on infrastructure you control, and forgets on a schedule you can prove.",
 };
 
-export default function InboxPage() {
-  const [items, setItems] = useState<Item[]>([]);
-  const [forgetInterval, setForgetInterval] = useState<string>("24h");
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [flash, setFlash] = useState<{ kind: "ok" | "info"; text: string } | null>(null);
-
-  const load = useCallback(async () => {
-    const res = await fetch("/api/items", { cache: "no-store" });
-    const data = await res.json();
-    setItems(data.items);
-    setForgetInterval(data.forgetInterval);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const process = async () => {
-    setBusy(true);
-    setFlash(null);
-    const res = await fetch("/api/process", { method: "POST" });
-    const data = await res.json();
-    await load();
-    setBusy(false);
-    setFlash({
-      kind: "ok",
-      text:
-        data.processed > 0
-          ? `Processed ${data.processed} new email(s) into encrypted derived data.`
-          : `No new emails to process (all ${data.skipped} sample emails already done).`,
-    });
-  };
-
-  const forgetOne = async (id: string) => {
-    setBusy(true);
-    await fetch("/api/forget", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ itemId: id }),
-    });
-    await load();
-    setBusy(false);
-    setFlash({ kind: "info", text: "Item forgotten — its key was destroyed. See the Audit log." });
-  };
-
-  const forgetAll = async () => {
-    setBusy(true);
-    const res = await fetch("/api/forget", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ all: true }),
-    });
-    const data = await res.json();
-    await load();
-    setBusy(false);
-    setFlash({ kind: "info", text: `Logged out & forgot ${data.forgotten} item(s). Keys destroyed.` });
-  };
-
-  const resetDemo = async () => {
-    if (!confirm("Reset the demo? This wipes all derived items, keys, and audit events so you can start over.")) return;
-    setBusy(true);
-    await fetch("/api/reset", { method: "POST" });
-    await load();
-    setBusy(false);
-    setFlash({ kind: "info", text: "Demo reset. Click “Process inbox” to start again." });
-  };
-
-  const activeCount = items.filter((i) => i.status === "ACTIVE").length;
-  const forgottenCount = items.length - activeCount;
-
+export default function Landing() {
   return (
-    <div>
-      <div className="banner">
-        <strong>Prototype — synthetic data only.</strong> Every email below is fake. The
-        “AI” is a local rule-based placeholder (no internet, no API key). Encryption keys
-        here are demo-grade, not production-grade.
-      </div>
-
-      <h1>Inbox</h1>
-      <p className="subtitle">
-        AI-derived summaries &amp; drafts. Stored encrypted; auto-forgotten{" "}
-        <strong>{intervalLabel[forgetInterval] ?? forgetInterval}</strong>.{" "}
-        <a href="/settings">Change schedule</a>.
-      </p>
-
-      <div className="toolbar">
-        <button className="btn-primary" onClick={process} disabled={busy}>
-          {busy ? "Working…" : "Process inbox"}
-        </button>
-        <button className="btn-secondary" onClick={load} disabled={busy}>
-          Refresh
-        </button>
-        {activeCount > 0 && (
-          <button className="btn-danger" onClick={forgetAll} disabled={busy}>
-            Log out &amp; forget all
-          </button>
-        )}
-        {items.length > 0 && (
-          <button className="btn-secondary" onClick={resetDemo} disabled={busy}>
-            Reset demo
-          </button>
-        )}
-        <span className="note">
-          {activeCount} active · {forgottenCount} forgotten
-        </span>
-      </div>
-
-      {flash && <div className={`flash ${flash.kind}`}>{flash.text}</div>}
-
-      {loading ? (
-        <p className="empty">Loading…</p>
-      ) : items.length === 0 ? (
-        <div className="empty">
-          No items yet. Click <strong>“Process inbox”</strong> to run the AI over the 15
-          synthetic sample emails.
+    <>
+      <header className="mk-topbar">
+        <div className="mk-topbar-inner">
+          <Link href="/" className="brand">
+            <span className="logo" aria-hidden>C</span>
+            <span className="brand-text">
+              <b>Citadel</b>
+              <small>Your sovereign inbox</small>
+            </span>
+          </Link>
+          <nav className="mk-nav">
+            <a href="#how">How it works</a>
+            <a href="#pricing">Pricing</a>
+            <Link className="btn-primary btn-small" href="/inbox">Open Citadel</Link>
+          </nav>
         </div>
-      ) : (
-        items.map((item) =>
-          item.status === "ACTIVE" ? (
-            <ActiveCard key={item.id} item={item} onForget={forgetOne} busy={busy} />
-          ) : (
-            <ForgottenCard key={item.id} item={item} />
-          )
-        )
-      )}
-    </div>
-  );
-}
+      </header>
 
-function ActiveCard({
-  item,
-  onForget,
-  busy,
-}: {
-  item: ActiveItem;
-  onForget: (id: string) => void;
-  busy: boolean;
-}) {
-  const [showDraft, setShowDraft] = useState(false);
-  const p = item.payload;
-  return (
-    <div className="card">
-      <div className="item-head">
-        <div>
-          <div className="item-from">{p.from}</div>
-          <div className="item-subject">{p.subject}</div>
+      <div className="mk">
+      <section className="mk-hero">
+        <div className="mk-eyebrow">Sovereign email · AI you host yourself</div>
+        <h1 className="mk-h1">
+          The inbox
+          <br />
+          that <em>forgets</em>.
+        </h1>
+        <p className="mk-lede">
+          Citadel reads your mail to triage it and draft your replies, then deletes what it
+          learned on a schedule you set — and proves it&rsquo;s gone. The AI runs on infrastructure
+          you control. Nothing is sent to a US cloud. No copies are left behind.
+        </p>
+        <div className="mk-cta-row">
+          <Link className="btn-primary" href="/inbox">Open Citadel</Link>
+          <a className="btn-secondary" href="#how">See how it works</a>
         </div>
-        <div className="item-meta">{fmt(p.receivedAt)}</div>
-      </div>
 
-      <div className="badges">
-        <span className={`badge ${priorityClass(p.priority)}`}>{p.priority}</span>
-        <span className="badge label">{p.triageLabel}</span>
-      </div>
-
-      <div className="summary">{p.summary}</div>
-
-      <div className="toolbar" style={{ marginBottom: 0 }}>
-        <button className="btn-secondary btn-small" onClick={() => setShowDraft((s) => !s)}>
-          {showDraft ? "Hide suggested reply" : "Show suggested reply"}
-        </button>
-        <button className="btn-danger btn-small" onClick={() => onForget(item.id)} disabled={busy}>
-          Forget now
-        </button>
-        {item.forgetAt && (
-          <span className="note">Auto-forgets {fmt(item.forgetAt)}</span>
-        )}
-      </div>
-
-      {showDraft && (
-        <div className="draft">
-          <div className="draft-label">Suggested reply (draft)</div>
-          {p.draftReply}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ForgottenCard({ item }: { item: ForgottenItem }) {
-  const [proof, setProof] = useState<string | null>(null);
-
-  const prove = async () => {
-    const res = await fetch(`/api/forget?prove=${item.id}`, { cache: "no-store" });
-    const d = await res.json();
-    setProof(
-      [
-        `status:           ${d.status}`,
-        `key in vault:      ${d.keyDestroyed ? "DESTROYED (gone)" : "present"}`,
-        `stored ciphertext: ${d.ciphertextPreview}`,
-        `decrypt attempt:   ${d.decryptAttempt === "unrecoverable" ? "FAILED — unrecoverable" : "readable"}`,
-      ].join("\n")
-    );
-  };
-
-  return (
-    <div className="card forgotten">
-      <div className="item-head">
-        <div>
-          <span className="lock">🔒 Forgotten</span>
-          <div className="note">
-            Content permanently destroyed. Processed {fmt(item.processedAt)} · forgotten{" "}
-            {fmt(item.forgottenAt)}.
+        <div className="mk-preview" aria-hidden>
+          <div className="mk-preview-bar"><span /><span /><span /></div>
+          <div className="card" style={{ margin: 0 }}>
+            <div className="item-head">
+              <div>
+                <div className="item-from">Jordan Lee &lt;jordan@client.example&gt;</div>
+                <div className="item-subject">Re: settlement timeline</div>
+              </div>
+              <div className="item-meta">9:24 AM</div>
+            </div>
+            <div className="badges">
+              <span className="badge p-Urgent">Urgent</span>
+              <span className="badge label">Client matter</span>
+            </div>
+            <div className="summary">
+              Client asks to confirm the filing deadline this Thursday and whether the revised draft
+              is ready to send.
+            </div>
           </div>
         </div>
-        <button className="btn-secondary btn-small" onClick={prove}>
-          Prove it’s unrecoverable
-        </button>
+      </section>
+
+      <section className="mk-section">
+        <h2 className="mk-h2">
+          Three <span className="mk-grad">guarantees</span>, not promises
+        </h2>
+        <p className="mk-sub">Each one is a property of how Citadel is built — not a policy you have to trust.</p>
+        <div className="mk-grid">
+          <Feature
+            title="The AI runs where you do"
+            body="Summaries, triage and draft replies are generated by a model running on infrastructure you control — today via a local Apertus model, next on a Canadian GPU host. No US clouds. No API keys. Your mail never leaves the box you run."
+          />
+          <Feature
+            title="It forgets, provably"
+            body="Citadel keeps only what the AI derived, and seals each item under its own encryption key. When your schedule says so, that key is destroyed. There is no master copy to fall back on, so the data is gone — permanently, not in a trash folder."
+          />
+          <Feature
+            title="The audit log carries no secrets"
+            body="Every step is recorded — that a message was processed, and when it was forgotten — but never the content, the summary, or a key. You can show a regulator exactly what happened without revealing a single word of it."
+          />
+        </div>
+      </section>
+
+      <section className="mk-section" id="how">
+        <h2 className="mk-h2">How it works</h2>
+        <ol className="mk-steps">
+          <Step n="1" title="Connect" body="Read-only Gmail today (Microsoft 365 next). Raw email stays in memory only — never written to disk." />
+          <Step n="2" title="Process" body="The local AI writes a one-line summary, a priority, and a suggested reply for each message." />
+          <Step n="3" title="Encrypt" body="Only the derived data is stored — encrypted per-item with a unique key." />
+          <Step n="4" title="Forget" body="On schedule (1h / 24h / 7d / on logout) the key is destroyed — gone for good." />
+          <Step n="5" title="Prove" body="The audit log shows it happened, content-free. One click proves the data is truly unrecoverable." />
+        </ol>
+      </section>
+
+      <section className="mk-section" id="pricing">
+        <h2 className="mk-h2">One product. Honest price.</h2>
+        <p className="mk-sub">Connect a real inbox for free. Upgrade when you outgrow the cap — same privacy either way.</p>
+        <div className="mk-pricing">
+          <div className="mk-price">
+            <div className="mk-price-name">Free</div>
+            <div className="mk-price-amt">$0</div>
+            <div className="mk-price-note">Connect a real inbox</div>
+            <ul className="mk-price-list">
+              <li>AI on up to <strong>2 emails</strong></li>
+              <li>Capped text per email</li>
+              <li>The full forget &amp; prove loop</li>
+            </ul>
+            <Link className="btn-secondary mk-price-btn" href="/inbox">Try it free</Link>
+          </div>
+          <div className="mk-price mk-price-featured">
+            <div className="mk-price-badge">Most popular</div>
+            <div className="mk-price-name">Full</div>
+            <div className="mk-price-amt">$15<span>/mo</span></div>
+            <div className="mk-price-note">or $10/mo paid annually</div>
+            <ul className="mk-price-list">
+              <li>Your full inbox</li>
+              <li>Full forget scheduler &amp; semantic search</li>
+              <li>Audit export</li>
+              <li>Professional / compliance add-ons</li>
+            </ul>
+            <Link className="btn-primary mk-price-btn" href="/inbox">Get started</Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="mk-band">
+        <h2 className="mk-band-h">Take back your inbox.</h2>
+        <Link className="btn-primary mk-band-btn" href="/inbox">Get started</Link>
+      </section>
+
+      <footer className="mk-footer">
+        <div className="brand">
+          <span className="logo" aria-hidden>C</span>
+          <span className="brand-text">
+            <b>Citadel</b>
+            <small>Your sovereign inbox</small>
+          </span>
+        </div>
+        <div className="mk-foot-note">
+          Concept prototype · synthetic data by default · AI runs locally. © Citadel
+        </div>
+        <div className="mk-foot-links">
+          <Link href="/privacy">Privacy</Link>
+        </div>
+      </footer>
       </div>
-      {proof && <div className="proof">{proof}</div>}
+    </>
+  );
+}
+
+function Feature({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="mk-feature">
+      <h3>{title}</h3>
+      <p>{body}</p>
     </div>
+  );
+}
+
+function Step({ n, title, body }: { n: string; title: string; body: string }) {
+  return (
+    <li className="mk-step">
+      <span className="mk-step-n" aria-hidden>{n}</span>
+      <div>
+        <h4>{title}</h4>
+        <p>{body}</p>
+      </div>
+    </li>
   );
 }

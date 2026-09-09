@@ -44,7 +44,3 @@ export class LocalKeyVault implements KeyVault {
     });
   }
 }
-
-export function getKeyVault(): KeyVault {
-  return new LocalKeyVault();
-}

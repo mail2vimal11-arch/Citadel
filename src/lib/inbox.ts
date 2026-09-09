@@ -1,13 +1,14 @@
 import { prisma } from "@/lib/db";
-import { getKeyVault } from "@/lib/keyvault/LocalKeyVault";
+import { getKeyVault } from "@/lib/keyvault";
 import { decrypt } from "@/lib/crypto";
 import type { AnyInboxItem, DerivedPayload } from "@/lib/types";
 
 // Load all items for the inbox view. ACTIVE items are decrypted in-memory just
 // long enough to build the response; FORGOTTEN items return NO content at all.
-export async function loadInbox(): Promise<AnyInboxItem[]> {
+export async function loadInbox(userId: string): Promise<AnyInboxItem[]> {
   const vault = getKeyVault();
   const rows = await prisma.derivedItem.findMany({
+    where: { userId },
     orderBy: { processedAt: "desc" },
   });
 
@@ -58,14 +59,14 @@ export async function loadInbox(): Promise<AnyInboxItem[]> {
 
 // Demo-only: peek at the raw stored row for a forgotten item, to PROVE that the
 // ciphertext is still present but unreadable now that the key is gone.
-export async function proveUnrecoverable(itemId: string): Promise<{
+export async function proveUnrecoverable(userId: string, itemId: string): Promise<{
   found: boolean;
   status?: string;
   keyDestroyed?: boolean;
   ciphertextPreview?: string;
   decryptAttempt?: "unrecoverable" | "readable";
 }> {
-  const row = await prisma.derivedItem.findUnique({ where: { id: itemId } });
+  const row = await prisma.derivedItem.findFirst({ where: { id: itemId, userId } });
   if (!row) return { found: false };
 
   const key = await getKeyVault().getKey(row.keyId);

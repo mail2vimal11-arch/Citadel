@@ -1,0 +1,90 @@
+name: CI
+
+# Lightweight check: type-check and build the app. No Ollama/AI needed — we force
+# the offline heuristic provider so the build is hermetic and fast. On a push to
+# the deploy branch, a gated `deploy` job ships to the live host AFTER build is green.
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: "file:./dev.db"
+      AI_PROVIDER: "heuristic"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  # ---------------------------------------------------------------------------
+  # Deploy to the live host (citadel.aletheos.tech) over SSH. Runs ONLY:
+  #   - after `build` succeeds (needs: build),
+  #   - on a push (not PRs) to the deploy branch,
+  #   - and only when the deploy secrets are configured (otherwise it no-ops with
+  #     a notice, so the workflow stays green until you add them).
+  #
+  # Required repo secrets (Settings → Secrets and variables → Actions):
+  #   SSH_HOST     host or IP of the Hostinger box
+  #   SSH_USER     ssh user
+  #   SSH_KEY      that user's PRIVATE key (PEM); its public key in ~/.ssh/authorized_keys
+  #   DEPLOY_PATH  absolute path to the checked-out repo on the host
+  #   SSH_PORT     optional (defaults to 22)
+  # On the host the deploy does: git pull (this branch) + docker compose up -d --build.
+  # The image build runs `prisma db push`, which applies additive schema changes
+  # (e.g. the Setting.tone column) to the SQLite volume without data loss.
+  # ---------------------------------------------------------------------------
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/claude/sovereign-inbox-prototype-o03qrz'
+    concurrency:
+      group: deploy-citadel
+      cancel-in-progress: false
+    steps:
+      - name: Check deploy secrets
+        id: guard
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          if [ -z "$SSH_HOST" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Deploy secrets not set (SSH_HOST empty) — skipping. Add SSH_HOST/SSH_USER/SSH_KEY/DEPLOY_PATH to enable auto-deploy."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy over SSH
+        if: steps.guard.outputs.configured == 'true'
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script_stop: true
+          script: |
+            set -e
+            cd "${{ secrets.DEPLOY_PATH }}"
+            git fetch origin
+            git checkout claude/sovereign-inbox-prototype-o03qrz
+            git pull --ff-only origin claude/sovereign-inbox-prototype-o03qrz
+            docker compose up -d --build
+            docker image prune -f
