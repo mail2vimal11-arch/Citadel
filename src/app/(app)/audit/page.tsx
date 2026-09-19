@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 type Event = {
   id: string;
-  event: "PROCESSED" | "FORGOTTEN" | "SETTINGS_CHANGED";
+  event: "PROCESSED" | "FORGOTTEN" | "SETTINGS_CHANGED" | "DRAFTED" | "SENT";
   message: string;
   sourceRef: string | null;
   itemId: string | null;
@@ -25,10 +25,15 @@ export default function AuditPage() {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/audit", { cache: "no-store" });
-    const data = await res.json();
-    setEvents(data.events);
-    setLoading(false);
+    try {
+      const res = await fetch("/api/audit", { cache: "no-store" });
+      const data = await res.json();
+      setEvents(data.events ?? []);
+    } catch {
+      setEvents([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -36,7 +41,7 @@ export default function AuditPage() {
   }, [load]);
 
   return (
-    <div>
+    <div className="container">
       <div className="banner">
         <strong>Proof, not content.</strong> This append-only log records <em>that</em> an
         item was processed and <em>when</em> it was forgotten — never the email content, the

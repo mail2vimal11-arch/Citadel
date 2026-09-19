@@ -1,0 +1,75 @@
+# Citadel — deploy alongside the existing Traefik stack on this host.
+# Traefik runs in host-network mode and discovers this container by the labels
+# below (same convention as aletheos-website). We add our own bridge network and
+# touch nothing existing.
+
+services:
+  citadel:
+    build: .
+    image: citadel:latest
+    container_name: citadel
+    restart: unless-stopped
+    env_file: .env.docker
+    environment:
+      NODE_ENV: production
+      # SQLite lives on a named volume so it survives rebuilds.
+      DATABASE_URL: "file:/app/data/dev.db"
+    # Let the container reach Ollama running on the host.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # Liveness: hit the content-free /api/health endpoint with node's built-in
+    # fetch (node:20-slim has no curl/wget). start_period covers the boot-time
+    # `prisma db push` + `next start` before failures count against us.
+    healthcheck:
+      test:
+        - "CMD"
+        - "node"
+        - "-e"
+        - "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    volumes:
+      - citadel-data:/app/data
+      - citadel-secrets:/app/.citadel-secrets
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.citadel.entrypoints=websecure"
+      - "traefik.http.routers.citadel.rule=Host(`citadel.aletheos.tech`)"
+      - "traefik.http.routers.citadel.tls=true"
+      - "traefik.http.routers.citadel.tls.certresolver=letsencrypt"
+      - "traefik.http.services.citadel.loadbalancer.server.port=3000"
+
+  # Optional durable Postgres for the P3 storage seam. It is OFF by default (the
+  # live deploy uses the SQLite volume above); start it explicitly with
+  #   docker compose --profile postgres up -d db
+  # then point the app at it by setting, in .env.docker:
+  #   DATABASE_URL=postgresql://citadel:citadel@db:5432/citadel
+  # and flipping the Prisma provider to "postgresql" (see prisma/schema.prisma).
+  # TODO(production): replace this with a Canadian-region managed Postgres.
+  db:
+    image: postgres:16-alpine
+    container_name: citadel-db
+    restart: unless-stopped
+    profiles: ["postgres"]
+    environment:
+      POSTGRES_USER: citadel
+      POSTGRES_PASSWORD: citadel
+      POSTGRES_DB: citadel
+    volumes:
+      - citadel-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U citadel"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  citadel-data:
+  citadel-secrets:
+  citadel-pg:
+
+networks:
+  default:
+    name: citadel_default

@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 
-export type AuditEventType = "PROCESSED" | "FORGOTTEN" | "SETTINGS_CHANGED";
+export type AuditEventType = "PROCESSED" | "FORGOTTEN" | "SETTINGS_CHANGED" | "DRAFTED" | "SENT";
 
 // Write an append-only audit entry.
 //
@@ -8,6 +8,7 @@ export type AuditEventType = "PROCESSED" | "FORGOTTEN" | "SETTINGS_CHANGED";
 // log proves THAT something happened and WHEN — it must never contain the
 // email content, the summary, the draft, or any key material.
 export async function recordAudit(params: {
+  userId: string;
   event: AuditEventType;
   message: string;
   itemId?: string;
@@ -15,6 +16,7 @@ export async function recordAudit(params: {
 }): Promise<void> {
   await prisma.auditEvent.create({
     data: {
+      userId: params.userId,
       event: params.event,
       message: params.message,
       itemId: params.itemId,
@@ -23,6 +25,9 @@ export async function recordAudit(params: {
   });
 }
 
-export async function listAudit() {
-  return prisma.auditEvent.findMany({ orderBy: { createdAt: "desc" } });
+export async function listAudit(userId: string) {
+  return prisma.auditEvent.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+  });
 }

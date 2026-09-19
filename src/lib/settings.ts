@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/db";
 import type { ForgetInterval } from "@/lib/types";
+import { normalizeTone, type Tone } from "@/lib/ai/prompts";
+import { normalizePlan, type Plan } from "@/lib/billing";
 
 export const FORGET_OPTIONS: { value: ForgetInterval; label: string; ms: number | null }[] = [
   { value: "1h", label: "After 1 hour", ms: 60 * 60 * 1000 },
@@ -23,19 +25,47 @@ export function computeForgetAt(
   return new Date(processedAt.getTime() + ms);
 }
 
-export async function getForgetInterval(): Promise<ForgetInterval> {
+export async function getForgetInterval(userId: string): Promise<ForgetInterval> {
   const setting = await prisma.setting.upsert({
-    where: { id: 1 },
+    where: { userId },
     update: {},
-    create: { id: 1, forgetInterval: "24h" },
+    create: { userId, forgetInterval: "24h" },
   });
   return setting.forgetInterval as ForgetInterval;
 }
 
-export async function setForgetInterval(interval: ForgetInterval): Promise<void> {
+export async function setForgetInterval(userId: string, interval: ForgetInterval): Promise<void> {
   await prisma.setting.upsert({
-    where: { id: 1 },
+    where: { userId },
     update: { forgetInterval: interval },
-    create: { id: 1, forgetInterval: interval },
+    create: { userId, forgetInterval: interval },
   });
+}
+
+// ---- Write-with-AI tone profile (P7) ----------------------------------------
+export async function getTone(userId: string): Promise<Tone> {
+  const setting = await prisma.setting.upsert({
+    where: { userId },
+    update: {},
+    create: { userId },
+  });
+  return normalizeTone(setting.tone);
+}
+
+export async function setTone(userId: string, tone: Tone): Promise<void> {
+  await prisma.setting.upsert({
+    where: { userId },
+    update: { tone },
+    create: { userId, tone },
+  });
+}
+
+// ---- Plan (freemium gating, P12) --------------------------------------------
+export async function getPlan(userId: string): Promise<Plan> {
+  const setting = await prisma.setting.upsert({ where: { userId }, update: {}, create: { userId } });
+  return normalizePlan(setting.plan);
+}
+
+export async function setPlan(userId: string, plan: Plan): Promise<void> {
+  await prisma.setting.upsert({ where: { userId }, update: { plan }, create: { userId, plan } });
 }
