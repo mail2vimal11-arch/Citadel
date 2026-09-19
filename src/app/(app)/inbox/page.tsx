@@ -516,16 +516,17 @@ export default function InboxPage() {
             Connected to {connectedCount} real mailbox{connectedCount === 1 ? "" : "es"} — read-only.
           </strong>{" "}
           Message bodies are processed <strong>in memory only</strong> and never stored; only the
-          encrypted AI-derived summary/triage/draft is kept. The AI still runs{" "}
-          <strong>100% locally</strong>. ⚠️ Encryption keys here are <strong>demo-grade</strong> —
-          don’t connect a truly sensitive account on this prototype.
+          encrypted AI-derived summary/triage/draft is kept. The AI runs on{" "}
+          <strong>infrastructure Citadel controls</strong> — a self-hosted model, never a
+          third-party AI cloud. ⚠️ Encryption keys here are <strong>demo-grade</strong> — don’t
+          connect a truly sensitive account on this prototype.
         </div>
       ) : (
         <div className="banner">
-          <strong>Prototype — synthetic data only.</strong> Every email below is fake. The AI
-          runs <strong>100% locally</strong> (Apertus 8B via Ollama, no internet, no API key);
-          if Ollama isn’t running it falls back to an offline rule-based placeholder. Encryption
-          keys here are demo-grade, not production-grade.
+          <strong>Prototype — synthetic data only.</strong> Every email below is fake. The AI is
+          <strong> self-hosted</strong> (Apertus 8B via Ollama on infrastructure Citadel controls —
+          no third-party AI, no API key); if Ollama isn’t running it falls back to an offline
+          rule-based placeholder. Encryption keys here are demo-grade, not production-grade.
         </div>
       )}
 
@@ -649,7 +650,7 @@ export default function InboxPage() {
       {progress && (
         <div className="proc-progress">
           <div className="proc-progress-label">
-            Processing {progress.current} of {progress.total} email{progress.total === 1 ? "" : "s"} locally — the AI runs on your own machine, so this can take a moment on CPU…
+            Processing {progress.current} of {progress.total} email{progress.total === 1 ? "" : "s"} — the AI runs on Citadel’s own server (self-hosted, not a third-party AI cloud), so this can take a moment on CPU…
           </div>
           <div className="plan-meter" aria-hidden>
             <span style={{ width: `${progress.total ? (progress.current / progress.total) * 100 : 0}%` }} />

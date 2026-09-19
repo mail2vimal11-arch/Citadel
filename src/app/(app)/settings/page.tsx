@@ -158,8 +158,8 @@ export default function SettingsPage() {
 
       <p className="subtitle" style={{ marginTop: 32 }}>Write-with-AI tone</p>
       <p className="note" style={{ marginTop: -16, marginBottom: 14 }}>
-        The voice the local AI uses for suggested replies and the <em>Write with AI</em> box.
-        Runs 100% locally — your tone never leaves the machine.
+        The voice the self-hosted AI uses for suggested replies and the <em>Write with AI</em> box.
+        It runs on infrastructure Citadel controls — your tone never leaves our server.
       </p>
       {tones.map((t) => (
         <label key={t.value} className={`radio-row ${tone === t.value ? "selected" : ""}`}>
